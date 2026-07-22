@@ -9,11 +9,23 @@ import streamlit as st
 BASE_URL = "https://api.rentcast.io/v1"
 
 
+def _safe_secret(key: str):
+    """st.secrets.get() raises if no secrets.toml exists at all; make it safe."""
+    try:
+        return st.secrets.get(key)
+    except Exception:
+        return None
+
+
 def _headers():
-    api_key = st.secrets.get("RENTCAST_API_KEY")
+    api_key = _safe_secret("RENTCAST_API_KEY")
     if not api_key:
         return None
     return {"X-Api-Key": api_key, "Accept": "application/json"}
+
+
+def has_api_key() -> bool:
+    return bool(_safe_secret("RENTCAST_API_KEY"))
 
 
 def get_value_estimate(address: str) -> dict:
