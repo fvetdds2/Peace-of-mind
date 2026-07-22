@@ -263,23 +263,26 @@ with tabs[4]:
             avg_val = ds.property_avg_value(p)
             top[1].metric("Est. value", f"${avg_val:,.0f}")
 
-            if top[2].button("🔄 Refresh valuation (RentCast)", key=f"refresh_{idx}"):
-                with st.spinner("Fetching current value + rent estimate..."):
-                    val_result = valuation.get_value_estimate(p["address"])
-                    rent_result = valuation.get_rent_estimate(p["address"])
-                if "error" in val_result:
-                    st.error(val_result["error"])
-                if "error" in rent_result:
-                    st.error(rent_result["error"])
-                updates = {"last_updated": datetime.date.today().isoformat()}
-                if "value" in val_result and val_result.get("value"):
-                    updates["rentcast_estimate"] = val_result["value"]
-                if "rent" in rent_result and rent_result.get("rent"):
-                    updates["suggested_rent"] = rent_result["rent"]
-                if len(updates) > 1:
-                    ds.update_row("properties", idx, updates)
-                    st.success("Valuation refreshed.")
-                    st.rerun()
+            if valuation.has_api_key():
+                if top[2].button("🔄 Refresh valuation (RentCast)", key=f"refresh_{idx}"):
+                    with st.spinner("Fetching current value + rent estimate..."):
+                        val_result = valuation.get_value_estimate(p["address"])
+                        rent_result = valuation.get_rent_estimate(p["address"])
+                    if "error" in val_result:
+                        st.error(val_result["error"])
+                    if "error" in rent_result:
+                        st.error(rent_result["error"])
+                    updates = {"last_updated": datetime.date.today().isoformat()}
+                    if "value" in val_result and val_result.get("value"):
+                        updates["rentcast_estimate"] = val_result["value"]
+                    if "rent" in rent_result and rent_result.get("rent"):
+                        updates["suggested_rent"] = rent_result["rent"]
+                    if len(updates) > 1:
+                        ds.update_row("properties", idx, updates)
+                        st.success("Valuation refreshed.")
+                        st.rerun()
+            else:
+                top[2].caption("Enter estimates manually below ↓")
 
             def _n(v):
                 return float(v) if pd.notna(v) else 0.0
