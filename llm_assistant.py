@@ -75,8 +75,16 @@ def build_financial_context() -> str:
     return "\n".join(lines)
 
 
+def _safe_secret(key: str, default=None):
+    """st.secrets.get() raises if no secrets.toml exists at all; make it safe."""
+    try:
+        return st.secrets.get(key, default)
+    except Exception:
+        return default
+
+
 def _get_provider():
-    return st.secrets.get("PROVIDER", "anthropic").lower()
+    return (_safe_secret("PROVIDER", "groq") or "groq").lower()
 
 
 def ask(question: str, chat_history: list) -> str:
@@ -95,7 +103,7 @@ def _build_messages(question, context, chat_history):
 
 def _call_anthropic(question, context, chat_history):
     import anthropic
-    api_key = st.secrets.get("ANTHROPIC_API_KEY")
+    api_key = _safe_secret("ANTHROPIC_API_KEY")
     if not api_key:
         return "⚠️ No ANTHROPIC_API_KEY found in Streamlit secrets."
     client = anthropic.Anthropic(api_key=api_key)
@@ -110,7 +118,7 @@ def _call_anthropic(question, context, chat_history):
 
 def _call_groq(question, context, chat_history):
     import requests
-    api_key = st.secrets.get("GROQ_API_KEY")
+    api_key = _safe_secret("GROQ_API_KEY")
     if not api_key:
         return "⚠️ No GROQ_API_KEY found in Streamlit secrets."
     messages = [{"role": "system", "content": SYSTEM_PROMPT}] + _build_messages(question, context, chat_history)
