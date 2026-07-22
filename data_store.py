@@ -53,12 +53,18 @@ NUM_COLS = {
 }
 
 
-def load_table(name: str) -> pd.DataFrame:
-    path = FILES[name]
+import streamlit as st
+
+
+@st.cache_data(show_spinner=False)
+def _read_csv_cached(name: str, path_str: str, mtime: float) -> pd.DataFrame:
+    """
+    Cached CSV parse keyed on (file, modification time). When the file is
+    written, its mtime changes, which busts the cache automatically — so
+    edits always show up, but unchanged files parse only once.
+    """
     cols = SCHEMAS[name]
-    if not path.exists() or path.stat().st_size == 0:
-        return pd.DataFrame(columns=cols)
-    df = pd.read_csv(path)
+    df = pd.read_csv(path_str)
     for c in cols:
         if c not in df.columns:
             df[c] = pd.NA
@@ -70,6 +76,14 @@ def load_table(name: str) -> pd.DataFrame:
     if name in {"expenses", "income"} and not df.empty:
         df["month"] = df["date"].dt.to_period("M").astype(str)
     return df
+
+
+def load_table(name: str) -> pd.DataFrame:
+    path = FILES[name]
+    cols = SCHEMAS[name]
+    if not path.exists() or path.stat().st_size == 0:
+        return pd.DataFrame(columns=cols)
+    return _read_csv_cached(name, str(path), path.stat().st_mtime).copy()
 
 
 def save_table(name: str, df: pd.DataFrame) -> None:
