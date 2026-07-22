@@ -12,6 +12,7 @@ import streamlit as st
 import data_store as ds
 import valuation
 import llm_assistant
+import buddy
 
 st.set_page_config(page_title="Peace of Mind", page_icon="🕊️", layout="wide")
 
@@ -106,6 +107,38 @@ PLOTLY_BLUES = ["#2F6FED", "#7FA6F0", "#B7CCF5", "#16181D", "#5B8CE8", "#0F1218"
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
+if "ollie_greeted" not in st.session_state:
+    st.session_state.ollie_greeted = False
+
+# ---- Ollie the Owl: compute mood from live financial state ----
+def _current_month_over_budget() -> bool:
+    month = datetime.date.today().strftime("%Y-%m")
+    bva = ds.budget_vs_actual(month)
+    if bva.empty:
+        return False
+    return bool((bva["actual"] > bva["budget_amount"]).any())
+
+try:
+    _summary = ds.net_worth_summary()
+    _goals = ds.load_table("goals")
+    _over_budget = _current_month_over_budget()
+    _first_load = not st.session_state.ollie_greeted
+    _mood = buddy.compute_mood(_summary, _goals, _over_budget, _first_load)
+    st.session_state.ollie_greeted = True
+except Exception:
+    _mood = "neutral"
+
+with st.sidebar:
+    st.markdown(
+        '<div style="display:flex; justify-content:center; padding:12px 0 4px 0;">'
+        + buddy.owl_svg(_mood) + '</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div style="text-align:center; font-size:12px; color:#8A8F98; font-weight:600; '
+        'letter-spacing:0.04em; margin-top:2px;">OLLIE · your money buddy</div>',
+        unsafe_allow_html=True,
+    )
 
 st.markdown('<div class="hero-label" style="font-size:13px;">🕊️ PEACE OF MIND</div>', unsafe_allow_html=True)
 st.markdown('<p style="color:#8A8F98; margin-top:-8px; margin-bottom:24px;">Your net worth, budget, and properties — with an assistant that knows all of it.</p>', unsafe_allow_html=True)
