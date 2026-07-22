@@ -1,5 +1,0 @@
-.streamlit/secrets.toml
-data/*.csv
-__pycache__/
-*.pyc
-.venv/
