@@ -80,6 +80,22 @@ def _mouth_path(kind: str) -> str:
     return '<line x1="56" y1="74" x2="64" y2="74" stroke="#B5842A" stroke-width="2" stroke-linecap="round"/>'
 
 
+def render(mood: str = "neutral", height: int = 190) -> None:
+    """
+    Render Ollie into the Streamlit app via components.html (an iframe),
+    which reliably runs the SVG's CSS animations. st.markdown with
+    unsafe_allow_html strips <style>/animation in many Streamlit versions,
+    so we avoid it for the animated character.
+    """
+    import streamlit.components.v1 as components
+    html = f"""
+    <div style="display:flex; justify-content:center; align-items:flex-start;
+                background:transparent; font-family:'Inter',sans-serif;">
+        {owl_svg(mood)}
+    </div>"""
+    components.html(html, height=height)
+
+
 def owl_svg(mood: str = "neutral") -> str:
     cfg = _mood_config(mood)
     wing_anim = "ollie-wave" if mood == "wave" else "ollie-wing-idle"

@@ -14,7 +14,7 @@ import valuation
 import llm_assistant
 import buddy
 
-st.set_page_config(page_title="Peace of Mind", page_icon="🕊️", layout="wide")
+st.set_page_config(page_title="Peace of Mind", page_icon="🕊️", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -129,19 +129,20 @@ except Exception:
     _mood = "neutral"
 
 with st.sidebar:
-    st.markdown(
-        '<div style="display:flex; justify-content:center; padding:12px 0 4px 0;">'
-        + buddy.owl_svg(_mood) + '</div>',
-        unsafe_allow_html=True,
-    )
+    buddy.render(_mood, height=200)
     st.markdown(
         '<div style="text-align:center; font-size:12px; color:#8A8F98; font-weight:600; '
-        'letter-spacing:0.04em; margin-top:2px;">OLLIE · your money buddy</div>',
+        'letter-spacing:0.04em; margin-top:-8px;">OLLIE · your money buddy</div>',
         unsafe_allow_html=True,
     )
 
-st.markdown('<div class="hero-label" style="font-size:13px;">🕊️ PEACE OF MIND</div>', unsafe_allow_html=True)
-st.markdown('<p style="color:#8A8F98; margin-top:-8px; margin-bottom:24px;">Your net worth, budget, and properties — with an assistant that knows all of it.</p>', unsafe_allow_html=True)
+# Header row: title on the left, Ollie tucked into the top-right corner (always visible)
+head_left, head_right = st.columns([4, 1])
+with head_left:
+    st.markdown('<div class="hero-label" style="font-size:13px;">🕊️ PEACE OF MIND</div>', unsafe_allow_html=True)
+    st.markdown('<p style="color:#8A8F98; margin-top:-8px; margin-bottom:24px;">Your net worth, budget, and properties — with an assistant that knows all of it.</p>', unsafe_allow_html=True)
+with head_right:
+    buddy.render(_mood, height=170)
 
 tabs = st.tabs(["📊 Net Worth", "🎯 Goals", "🏦 Accounts", "🧾 Expenses & Income", "📋 Budget", "🏠 Properties", "💬 Ask the Assistant"])
 
