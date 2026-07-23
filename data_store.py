@@ -5,20 +5,43 @@ Kept deliberately simple: one CSV per table under data/.
 from pathlib import Path
 import pandas as pd
 
-DATA_DIR = Path("data")
-DATA_DIR.mkdir(exist_ok=True)
+DATA_ROOT = Path("data")
+DATA_ROOT.mkdir(exist_ok=True)
+
+# Each signed-in user gets their own folder under data/, so one person's
+# records are never readable from another person's session.
+_CURRENT_USER = "default"
+
+
+def _safe_name(username: str) -> str:
+    """Filesystem-safe folder name derived from a username."""
+    import re
+    cleaned = re.sub(r"[^A-Za-z0-9_-]", "_", (username or "default").strip().lower())
+    return cleaned or "default"
+
+
+def set_user(username: str) -> None:
+    """Point all reads/writes at this user's private folder."""
+    global _CURRENT_USER
+    _CURRENT_USER = _safe_name(username)
+    user_dir().mkdir(parents=True, exist_ok=True)
+
+
+def current_user() -> str:
+    return _CURRENT_USER
+
+
+def user_dir() -> Path:
+    return DATA_ROOT / _CURRENT_USER
+
+
+def _file(name: str) -> Path:
+    return user_dir() / f"{name}.csv"
 
 # Reserved category name used to stash the month's planned income in the budgets table.
 PLANNED_INCOME_KEY = "__planned_income__"
 
-FILES = {
-    "accounts": DATA_DIR / "accounts.csv",
-    "expenses": DATA_DIR / "expenses.csv",
-    "income": DATA_DIR / "income.csv",
-    "budgets": DATA_DIR / "budgets.csv",
-    "properties": DATA_DIR / "properties.csv",
-    "goals": DATA_DIR / "goals.csv",
-}
+TABLES = ["accounts", "expenses", "income", "budgets", "properties", "goals"]
 
 SCHEMAS = {
     "accounts": ["date", "account_name", "category", "balance"],
@@ -40,6 +63,15 @@ DATE_COLS = {
     "accounts": ["date"], "expenses": ["date"], "income": ["date"],
     "budgets": [], "properties": ["last_updated"],
     "goals": ["target_date", "created_at"],
+}
+
+TEXT_COLS = {
+    "accounts": ["account_name", "category"],
+    "expenses": ["category", "description"],
+    "income": ["source"],
+    "budgets": ["month", "category"],
+    "properties": ["address", "nickname", "notes"],
+    "goals": ["name", "track_type", "track_target"],
 }
 
 NUM_COLS = {
@@ -73,13 +105,15 @@ def _read_csv_cached(name: str, path_str: str, mtime: float) -> pd.DataFrame:
         df[c] = pd.to_datetime(df[c], errors="coerce", format="mixed")
     for c in NUM_COLS[name]:
         df[c] = pd.to_numeric(df[c], errors="coerce").astype("float64")
+    for c in TEXT_COLS.get(name, []):
+        df[c] = df[c].fillna("").astype(str).replace("nan", "")
     if name in {"expenses", "income"} and not df.empty:
         df["month"] = df["date"].dt.to_period("M").astype(str)
     return df
 
 
 def load_table(name: str) -> pd.DataFrame:
-    path = FILES[name]
+    path = _file(name)
     cols = SCHEMAS[name]
     if not path.exists() or path.stat().st_size == 0:
         return pd.DataFrame(columns=cols)
@@ -91,7 +125,7 @@ def save_table(name: str, df: pd.DataFrame) -> None:
     out = df[[c for c in cols if c in df.columns]].copy()
     for c in DATE_COLS[name]:
         out[c] = pd.to_datetime(out[c], errors="coerce", format="mixed").dt.strftime("%Y-%m-%d")
-    out.to_csv(FILES[name], index=False)
+    out.to_csv(_file(name), index=False)
 
 
 def append_row(name: str, row: dict) -> None:

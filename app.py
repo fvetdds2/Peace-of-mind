@@ -13,6 +13,7 @@ import data_store as ds
 import valuation
 import llm_assistant
 import buddy
+import auth
 
 st.set_page_config(page_title="Peace of Mind", page_icon="🕊️", layout="wide", initial_sidebar_state="expanded")
 
@@ -105,6 +106,9 @@ st.markdown("""
 
 PLOTLY_BLUES = ["#2F6FED", "#7FA6F0", "#B7CCF5", "#16181D", "#5B8CE8", "#0F1218"]
 
+# --- sign-in gate: points storage at this user's private folder ---
+CURRENT_USER = auth.login_gate()
+
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "vinny_greeted" not in st.session_state:
@@ -135,6 +139,10 @@ with st.sidebar:
         'letter-spacing:0.04em; margin-top:-8px;">VINNY · your money buddy</div>',
         unsafe_allow_html=True,
     )
+    if st.session_state.get("auth_user"):
+        st.caption(f"Signed in as **{st.session_state['auth_user']}**")
+    elif st.session_state.get("_unlocked_mode"):
+        st.warning("No accounts configured — this app is unlocked and anyone with the link can see this data.", icon="⚠️")
 
 # Header row: title on the left, Ollie tucked into the top-right corner (always visible)
 head_left, head_right = st.columns([4, 1])
