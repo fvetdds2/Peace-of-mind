@@ -442,28 +442,28 @@ _TRUNKS_HI = "#4E7BB0"
 def _mj_face(mood: str) -> dict:
     faces = {
         "happy": {
-            "brow_l": "M39,32 Q44,29.5 49,31.5", "brow_r": "M55,31.5 Q60,29.5 65,32",
+            "brow_l": "M55,24 Q60,21.5 65,23.5", "brow_r": "M71,23.5 Q76,21.5 81,24",
             "pupil_dy": 0,
-            "mouth": '<path d="M46,48 Q52,55 58,48 Z" fill="#8E3B2C"/>'
-                     '<path d="M47.2,48 Q52,51 56.8,48 Z" fill="#FFFFFF"/>',
+            "mouth": '<path d="M62,40 Q68,47 74,40 Z" fill="#8E3B2C"/>'
+                     '<path d="M63.2,40 Q68,43 72.8,40 Z" fill="#FFFFFF"/>',
         },
         "worried": {
-            "brow_l": "M39,30.5 Q44,34 49,32.5", "brow_r": "M55,32.5 Q60,34 65,30.5",
+            "brow_l": "M55,22.5 Q60,26 65,24.5", "brow_r": "M71,24.5 Q76,26 81,22.5",
             "pupil_dy": 1.5,
-            "mouth": '<path d="M48,52 Q52,48 56,52" fill="none" stroke="#B5654A" '
+            "mouth": '<path d="M64,44 Q68,40 72,44" fill="none" stroke="#B5654A" '
                      'stroke-width="2" stroke-linecap="round"/>',
         },
         "wave": {
-            "brow_l": "M39,32 Q44,29.5 49,31.5", "brow_r": "M55,31.5 Q60,29.5 65,32",
+            "brow_l": "M55,24 Q60,21.5 65,23.5", "brow_r": "M71,23.5 Q76,21.5 81,24",
             "pupil_dy": 0,
-            "mouth": '<path d="M46,48 Q52,55 58,48 Z" fill="#8E3B2C"/>'
-                     '<path d="M47.2,48 Q52,51 56.8,48 Z" fill="#FFFFFF"/>',
+            "mouth": '<path d="M62,40 Q68,47 74,40 Z" fill="#8E3B2C"/>'
+                     '<path d="M63.2,40 Q68,43 72.8,40 Z" fill="#FFFFFF"/>',
         },
         "neutral": {
-            "brow_l": "M39,32 Q44,30.5 49,32", "brow_r": "M55,32 Q60,30.5 65,32",
+            "brow_l": "M55,24 Q60,22.5 65,24", "brow_r": "M71,24 Q76,22.5 81,24",
             "pupil_dy": 0,
-            # teenage half-smirk rather than a wide kid grin
-            "mouth": '<path d="M48,50 Q52,52.5 56,49.5" fill="none" stroke="#B5654A" '
+            # easy half-smirk
+            "mouth": '<path d="M64,42 Q68,44.5 72,41.5" fill="none" stroke="#B5654A" '
                      'stroke-width="2" stroke-linecap="round"/>',
         },
     }
@@ -499,17 +499,19 @@ def mj_svg(mood: str = "neutral") -> str:
         border-radius: 12px; white-space: nowrap;
         animation: mj-pop 0.4s ease-out;
     }}
-    .mj-float {{ animation: mj-bob 3.6s ease-in-out infinite; transform-origin: 58px 101px; }}
+    .mj-float {{ animation: mj-bob 3.6s ease-in-out infinite; transform-origin: 60px 100px; }}
     .mj-eyelid {{ animation: mj-blink 5.4s infinite; transform-origin: center; }}
     .mj-ripple-a {{ animation: mj-ripple 3.6s ease-in-out infinite; transform-origin: 60px 112px; }}
     .mj-ripple-b {{ animation: mj-ripple 3.6s ease-in-out infinite 1.3s; transform-origin: 60px 120px; }}
     .mj-sparkle {{ animation: mj-twinkle 2.2s ease-in-out infinite; }}
     .mj-sparkle-b {{ animation: mj-twinkle 2.2s ease-in-out infinite 1.1s; }}
     .mj-shine {{ animation: mj-twinkle 2.8s ease-in-out infinite 0.5s; }}
+    .mj-arm {{ animation: mj-arm-raise 2.5s ease-in-out infinite; transform-origin: 46px 62px; }}
+    .mj-forearm {{ animation: mj-forearm-wave 0.95s ease-in-out infinite; transform-origin: 46px 71px; }}
 
     @keyframes mj-bob {{
         0%, 100% {{ transform: translateY(0) rotate(0deg); }}
-        50%      {{ transform: translateY(-3px) rotate(1.2deg); }}
+        50%      {{ transform: translateY(-3px) rotate(1deg); }}
     }}
     @keyframes mj-blink {{
         0%, 94%, 100% {{ transform: scaleY(0); }}
@@ -523,6 +525,13 @@ def mj_svg(mood: str = "neutral") -> str:
         0%, 100% {{ opacity: 0.4; }}
         50%      {{ opacity: 1; }}
     }}
+    @keyframes mj-arm-raise {{
+        0%, 100% {{ transform: rotate(138deg); }}
+    }}
+    @keyframes mj-forearm-wave {{
+        0%, 100% {{ transform: rotate(-16deg); }}
+        50%      {{ transform: rotate(16deg); }}
+    }}
     @keyframes mj-pop {{
         0%   {{ transform: scale(0.6); opacity: 0; }}
         100% {{ transform: scale(1); opacity: 1; }}
@@ -532,120 +541,121 @@ def mj_svg(mood: str = "neutral") -> str:
         {speech_html}
         <svg width="130" height="130" viewBox="0 0 120 126"
              xmlns="http://www.w3.org/2000/svg" role="img"
-             aria-label="MJ, reclining on a luxury pool float">
+             aria-label="MJ, sitting on a luxury pool float, waving">
 
             <!-- pool -->
-            <rect x="0" y="102" width="120" height="24" rx="7" fill="{_POOL}"/>
-            <rect x="0" y="102" width="120" height="4" rx="2" fill="{_POOL_LIGHT}" opacity="0.85"/>
-            <ellipse class="mj-ripple-a" cx="60" cy="114" rx="44" ry="3.2"
+            <rect x="0" y="101" width="120" height="25" rx="7" fill="{_POOL}"/>
+            <rect x="0" y="101" width="120" height="4" rx="2" fill="{_POOL_LIGHT}" opacity="0.85"/>
+            <ellipse class="mj-ripple-a" cx="60" cy="113" rx="44" ry="3.2"
                      fill="none" stroke="{_POOL_LIGHT}" stroke-width="1.4" opacity="0.5"/>
-            <ellipse class="mj-ripple-b" cx="60" cy="121" rx="34" ry="2.6"
+            <ellipse class="mj-ripple-b" cx="60" cy="120" rx="34" ry="2.6"
                      fill="none" stroke="{_POOL_LIGHT}" stroke-width="1.2" opacity="0.4"/>
 
             <g class="mj-float">
                 <!-- lounger, back half -->
-                <path d="M22,101 A36,8.5 0 0 1 94,101" fill="none"
+                <path d="M26,100 A34,8 0 0 1 94,100" fill="none"
                       stroke="{_LOUNGER}" stroke-width="12" stroke-linecap="round"/>
-                <path d="M22,101 A36,8.5 0 0 1 94,101" fill="none"
-                      stroke="{_LOUNGER_TRIM}" stroke-width="1.6" stroke-linecap="round" opacity="0.9"/>
+                <path d="M26,100 A34,8 0 0 1 94,100" fill="none"
+                      stroke="{_LOUNGER_TRIM}" stroke-width="1.5" stroke-linecap="round" opacity="0.9"/>
 
-                <g transform="translate(0,-8) rotate(-13 50 92)">
-                <!-- propping arm, planted behind on the ring -->
-                <path d="M44,71 Q35,82 31,92" fill="none" stroke="{_SKIN}"
-                      stroke-width="7.5" stroke-linecap="round"/>
+                <!-- relaxed arm, hand resting on the rim -->
+                <path d="M73,63 Q81,72 82,84" fill="none" stroke="{_SKIN}"
+                      stroke-width="7" stroke-linecap="round"/>
 
                 <!-- swim shorts -->
-                <path d="M42,84 q10,-3 22,0 l2,13 q-13,3 -26,0 z" fill="{_TRUNKS}"/>
-                <path d="M42,87 q11,-3 23,0" fill="none" stroke="{_TRUNKS_HI}"
+                <path d="M50,76 q10,-3 20,0 l1,11 q-11,3 -22,0 z" fill="{_TRUNKS}"/>
+                <path d="M50,79 q10,-3 21,0" fill="none" stroke="{_TRUNKS_HI}"
                       stroke-width="1.3" opacity="0.8"/>
 
-                <!-- reclining torso -->
-                <path d="M41,67 q11,-5 22,-1 l2,20 q-12,3 -25,0 z" fill="{_SKIN}"/>
+                <!-- upright torso -->
+                <path d="M49,58 q11,-5 22,-1 l1,20 q-12,3 -24,0 z" fill="{_SKIN}"/>
 
                 <!-- diamond vest -->
-                <path d="M41,67 q6,-3 10,-4 l6,12 -4,20 -13,-1 z" fill="{_VEST}"/>
-                <path d="M63,66 q-6,-3 -10,-4 l-2,12 4,20 12,-1 z" fill="{_VEST}"/>
-                <path d="M41,67 q6,-3 10,-4" fill="none" stroke="{_VEST_DARK}" stroke-width="1.1"/>
-                <path d="M63,66 q-6,-3 -10,-4" fill="none" stroke="{_VEST_DARK}" stroke-width="1.1"/>
+                <path d="M49,58 q6,-3 10,-4 l6,12 -4,20 -13,-1 z" fill="{_VEST}"/>
+                <path d="M71,57 q-6,-3 -10,-4 l-2,12 4,20 12,-1 z" fill="{_VEST}"/>
+                <path d="M49,58 q6,-3 10,-4" fill="none" stroke="{_VEST_DARK}" stroke-width="1.1"/>
+                <path d="M71,57 q-6,-3 -10,-4" fill="none" stroke="{_VEST_DARK}" stroke-width="1.1"/>
                 <g class="mj-sparkle">
-                    <path d="M45,76 l2,3 -2,3 -2,-3 z" fill="#FFFFFF"/>
-                    <path d="M60,82 l2,3 -2,3 -2,-3 z" fill="#FFFFFF"/>
+                    <path d="M53,67 l2,3 -2,3 -2,-3 z" fill="#FFFFFF"/>
+                    <path d="M68,74 l2,3 -2,3 -2,-3 z" fill="#FFFFFF"/>
                 </g>
                 <g class="mj-sparkle-b">
-                    <path d="M60,74 l2,3 -2,3 -2,-3 z" fill="#CDEBFA"/>
-                    <path d="M45,84 l2,3 -2,3 -2,-3 z" fill="#CDEBFA"/>
+                    <path d="M68,65 l2,3 -2,3 -2,-3 z" fill="#CDEBFA"/>
+                    <path d="M53,76 l2,3 -2,3 -2,-3 z" fill="#CDEBFA"/>
                 </g>
 
                 <!-- big rope chain + oversized diamond -->
-                <path d="M45,63 Q52,86 59,63" fill="none" stroke="{_GOLD_DARK}"
+                <path d="M53,54 Q60,77 67,54" fill="none" stroke="{_GOLD_DARK}"
                       stroke-width="5.6" stroke-linecap="round"/>
-                <path d="M45,63 Q52,86 59,63" fill="none" stroke="{_GOLD}"
+                <path d="M53,54 Q60,77 67,54" fill="none" stroke="{_GOLD}"
                       stroke-width="4" stroke-linecap="round"/>
-                <path d="M45,63 Q52,86 59,63" fill="none" stroke="{_GOLD_HI}"
+                <path d="M53,54 Q60,77 67,54" fill="none" stroke="{_GOLD_HI}"
                       stroke-width="1.2" stroke-linecap="round" opacity="0.85"/>
-                <circle cx="52" cy="81" r="8.4" fill="{_GOLD_DARK}"/>
-                <circle cx="52" cy="81" r="7" fill="{_GOLD}"/>
-                <path d="M52,75 L56.8,81 L52,87 L47.2,81 z" fill="#FFFFFF"/>
-                <path class="mj-shine" d="M52,75 L54.4,81 L52,87 L49.6,81 z" fill="#CDEBFA"/>
+                <circle cx="60" cy="72" r="8.4" fill="{_GOLD_DARK}"/>
+                <circle cx="60" cy="72" r="7" fill="{_GOLD}"/>
+                <path d="M60,66 L64.8,72 L60,78 L55.2,72 z" fill="#FFFFFF"/>
+                <path class="mj-shine" d="M60,66 L62.4,72 L60,78 L57.6,72 z" fill="#CDEBFA"/>
 
-                <!-- resting arm, hand on the knee -->
-                <path d="M62,71 Q70,80 74,88" fill="none" stroke="{_SKIN}"
-                      stroke-width="7" stroke-linecap="round"/>
+                <!-- waving arm: shoulder raises, forearm waves at the elbow -->
+                <g class="mj-arm">
+                    <g class="mj-forearm">
+                        <rect x="42.4" y="70" width="7.2" height="15" rx="3.6" fill="{_SKIN}"/>
+                        <circle cx="46" cy="85" r="4.4" fill="{_SKIN}"/>
+                    </g>
+                    <rect x="42" y="58" width="8" height="14" rx="4" fill="{_SKIN}"/>
+                </g>
 
                 <!-- neck + head (teen build) -->
-                <rect x="47" y="55" width="9" height="11" rx="3" fill="{_SKIN_SHADE}"/>
-                <circle cx="35" cy="41" r="3.6" fill="{_SKIN_SHADE}"/>
-                <circle cx="69" cy="41" r="3.6" fill="{_SKIN_SHADE}"/>
-                <path d="M35,36 q0,17 17,22 q17,-5 17,-22 q0,-18 -17,-18 q-17,0 -17,18 z" fill="{_SKIN}"/>
+                <rect x="55.5" y="45" width="9" height="11" rx="3" fill="{_SKIN_SHADE}"/>
+                <circle cx="43" cy="33" r="3.6" fill="{_SKIN_SHADE}"/>
+                <circle cx="77" cy="33" r="3.6" fill="{_SKIN_SHADE}"/>
+                <path d="M43,28 q0,17 17,22 q17,-5 17,-22 q0,-18 -17,-18 q-17,0 -17,18 z" fill="{_SKIN}"/>
 
                 <!-- styled dark hair -->
-                <path d="M34,40 C33,21 41,13 52,13 C63,13 71,21 70,40
-                         C68,32 66,27 63,24 C57,30 48,32 41,30
-                         C37,29 35,33 34,40 z" fill="{_HAIR}"/>
-                <path d="M39,29 l2,11 2.6,-10 z" fill="{_HAIR}"/>
-                <path d="M46,27 l2,12 2.6,-11 z" fill="{_HAIR}"/>
-                <path d="M53,27 l2,11 2.6,-10 z" fill="{_HAIR}"/>
-                <path d="M60,28 l2,10 2.6,-9 z" fill="{_HAIR}"/>
-                <path d="M42,17 C48,14 57,15 62,19 C55,16 48,16 42,17 z" fill="{_HAIR_HI}"/>
+                <path d="M42,32 C41,13 49,5 60,5 C71,5 79,13 78,32
+                         C76,24 74,19 71,16 C65,22 56,24 49,22
+                         C45,21 43,25 42,32 z" fill="{_HAIR}"/>
+                <path d="M47,21 l2,11 2.6,-10 z" fill="{_HAIR}"/>
+                <path d="M54,19 l2,12 2.6,-11 z" fill="{_HAIR}"/>
+                <path d="M61,19 l2,11 2.6,-10 z" fill="{_HAIR}"/>
+                <path d="M68,20 l2,10 2.6,-9 z" fill="{_HAIR}"/>
+                <path d="M50,9 C56,6 65,7 70,11 C63,8 56,8 50,9 z" fill="{_HAIR_HI}"/>
 
                 <!-- eyes -->
-                <ellipse cx="45" cy="{40 + py}" rx="4.3" ry="3.9" fill="#FFFFFF"/>
-                <ellipse cx="59" cy="{40 + py}" rx="4.3" ry="3.9" fill="#FFFFFF"/>
-                <circle cx="45" cy="{40 + py}" r="2.5" fill="#2A2140"/>
-                <circle cx="59" cy="{40 + py}" r="2.5" fill="#2A2140"/>
-                <circle cx="46" cy="{39 + py}" r="0.9" fill="#FFFFFF"/>
-                <circle cx="60" cy="{39 + py}" r="0.9" fill="#FFFFFF"/>
+                <ellipse cx="53" cy="{32 + py}" rx="4.3" ry="3.9" fill="#FFFFFF"/>
+                <ellipse cx="67" cy="{32 + py}" rx="4.3" ry="3.9" fill="#FFFFFF"/>
+                <circle cx="53" cy="{32 + py}" r="2.5" fill="#2A2140"/>
+                <circle cx="67" cy="{32 + py}" r="2.5" fill="#2A2140"/>
+                <circle cx="54" cy="{31 + py}" r="0.9" fill="#FFFFFF"/>
+                <circle cx="68" cy="{31 + py}" r="0.9" fill="#FFFFFF"/>
                 <g class="mj-eyelid">
-                    <rect x="40.5" y="35" width="9" height="5.5" rx="2.7" fill="{_SKIN}"/>
-                    <rect x="54.5" y="35" width="9" height="5.5" rx="2.7" fill="{_SKIN}"/>
+                    <rect x="48.5" y="27" width="9" height="5.5" rx="2.7" fill="{_SKIN}"/>
+                    <rect x="62.5" y="27" width="9" height="5.5" rx="2.7" fill="{_SKIN}"/>
                 </g>
 
                 <path d="{f['brow_l']}" fill="none" stroke="{_HAIR}"
-                      stroke-width="2.1" stroke-linecap="round"/>
+                      stroke-width="2.1" stroke-linecap="round"
+                      transform="translate(-8,0)"/>
                 <path d="{f['brow_r']}" fill="none" stroke="{_HAIR}"
-                      stroke-width="2.1" stroke-linecap="round"/>
-                <ellipse cx="52" cy="45" rx="1.6" ry="1.3" fill="{_SKIN_SHADE}"/>
-                {f['mouth']}
-                </g>
+                      stroke-width="2.1" stroke-linecap="round"
+                      transform="translate(-8,0)"/>
+                <ellipse cx="60" cy="37" rx="1.6" ry="1.3" fill="{_SKIN_SHADE}"/>
+                <g transform="translate(-8,0)">{f['mouth']}</g>
+
+                <!-- crossed legs, tucked on the float -->
+                <path d="M60,80 Q44,82 45,89 Q50,95 60,94 Q70,95 75,89 Q76,82 60,80 z"
+                      fill="{_SKIN}"/>
+                <path d="M49,88 Q60,92 71,88" fill="none" stroke="{_SKIN_SHADE}"
+                      stroke-width="1.4" stroke-linecap="round" opacity="0.8"/>
 
                 <!-- lounger, front half + quilted piping -->
-                <path d="M22,101 A36,8.5 0 0 0 94,101" fill="none"
+                <path d="M26,100 A34,8 0 0 0 94,100" fill="none"
                       stroke="{_LOUNGER}" stroke-width="12" stroke-linecap="round"/>
-                <path d="M22,101 A36,8.5 0 0 0 94,101" fill="none"
-                      stroke="{_LOUNGER_TRIM}" stroke-width="1.6" stroke-linecap="round" opacity="0.9"/>
-                <path d="M34,107 l0,4.6 M46,109 l0,5 M58,110 l0,5.2
-                         M70,109 l0,5 M82,107 l0,4.6"
+                <path d="M26,100 A34,8 0 0 0 94,100" fill="none"
+                      stroke="{_LOUNGER_TRIM}" stroke-width="1.5" stroke-linecap="round" opacity="0.9"/>
+                <path d="M37,106 l0,4.4 M48,108 l0,4.8 M60,109 l0,5
+                         M72,108 l0,4.8 M83,106 l0,4.4"
                       stroke="{_LOUNGER_TRIM}" stroke-width="1.1" stroke-linecap="round" opacity="0.75"/>
-
-                <!-- legs up on the float, drawn last so they read clearly -->
-                <path d="M54,84 Q72,83 86,87" fill="none" stroke="{_SKIN_SHADE}"
-                      stroke-width="11" stroke-linecap="round"/>
-                <path d="M54,83 Q72,82 86,86" fill="none" stroke="{_SKIN}"
-                      stroke-width="8.6" stroke-linecap="round"/>
-                <ellipse cx="90" cy="87" rx="5" ry="3.6" fill="{_SKIN_SHADE}"
-                         transform="rotate(14 90 87)"/>
-                <ellipse cx="89.5" cy="86" rx="4.2" ry="2.9" fill="{_SKIN}"
-                         transform="rotate(14 89.5 86)"/>
             </g>
         </svg>
     </div>"""
