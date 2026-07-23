@@ -549,14 +549,7 @@ def mj_svg(mood: str = "neutral") -> str:
                 <path d="M22,101 A36,8.5 0 0 1 94,101" fill="none"
                       stroke="{_LOUNGER_TRIM}" stroke-width="1.6" stroke-linecap="round" opacity="0.9"/>
 
-                <!-- legs stretched out along the float -->
-                <path d="M57,93 Q68,90 78,90" fill="none" stroke="{_SKIN}"
-                      stroke-width="9.5" stroke-linecap="round"/>
-                <path d="M78,90 Q87,89 93,87" fill="none" stroke="{_SKIN}"
-                      stroke-width="8" stroke-linecap="round"/>
-                <ellipse cx="95" cy="86" rx="5" ry="3.6" fill="{_SKIN_SHADE}"
-                         transform="rotate(-14 95 86)"/>
-
+                <g transform="translate(0,-8) rotate(-13 50 92)">
                 <!-- propping arm, planted behind on the ring -->
                 <path d="M44,71 Q35,82 31,92" fill="none" stroke="{_SKIN}"
                       stroke-width="7.5" stroke-linecap="round"/>
@@ -633,6 +626,7 @@ def mj_svg(mood: str = "neutral") -> str:
                       stroke-width="2.1" stroke-linecap="round"/>
                 <ellipse cx="52" cy="45" rx="1.6" ry="1.3" fill="{_SKIN_SHADE}"/>
                 {f['mouth']}
+                </g>
 
                 <!-- lounger, front half + quilted piping -->
                 <path d="M22,101 A36,8.5 0 0 0 94,101" fill="none"
@@ -642,6 +636,16 @@ def mj_svg(mood: str = "neutral") -> str:
                 <path d="M34,107 l0,4.6 M46,109 l0,5 M58,110 l0,5.2
                          M70,109 l0,5 M82,107 l0,4.6"
                       stroke="{_LOUNGER_TRIM}" stroke-width="1.1" stroke-linecap="round" opacity="0.75"/>
+
+                <!-- legs up on the float, drawn last so they read clearly -->
+                <path d="M54,84 Q72,83 86,87" fill="none" stroke="{_SKIN_SHADE}"
+                      stroke-width="11" stroke-linecap="round"/>
+                <path d="M54,83 Q72,82 86,86" fill="none" stroke="{_SKIN}"
+                      stroke-width="8.6" stroke-linecap="round"/>
+                <ellipse cx="90" cy="87" rx="5" ry="3.6" fill="{_SKIN_SHADE}"
+                         transform="rotate(14 90 87)"/>
+                <ellipse cx="89.5" cy="86" rx="4.2" ry="2.9" fill="{_SKIN}"
+                         transform="rotate(14 89.5 86)"/>
             </g>
         </svg>
     </div>"""
