@@ -96,7 +96,10 @@ def _mouth_path(kind: str) -> str:
 
 def character_svg(mood: str = "neutral") -> str:
     cfg = _mood_config(mood)
-    arm_anim = "vinny-wave" if mood == "wave" else "vinny-arm-idle"
+    if mood == "wave":
+        arm_anim, forearm_anim, fa_dur = "vinny-arm-raise", "vinny-forearm-wave", "0.9s"
+    else:
+        arm_anim, forearm_anim, fa_dur = "vinny-arm-idle", "vinny-forearm-still", "2.5s"
     py = cfg["pupil_dy"]
 
     speech_html = ""
@@ -127,11 +130,12 @@ def character_svg(mood: str = "neutral") -> str:
     }}
     .vinny-svg {{ animation: {cfg['body_anim']} 3s ease-in-out infinite; transform-origin: 60px 112px; }}
     .vinny-eyelid {{ animation: vinny-blink 4.5s infinite; transform-origin: center; }}
-    .vinny-arm-l {{ animation: {arm_anim} 2.5s ease-in-out infinite; transform-origin: 39px 87px; }}
+    .vinny-arm-l {{ animation: {arm_anim} 2.5s ease-in-out infinite; transform-origin: 39px 79px; }}
+    .vinny-forearm-l {{ animation: {forearm_anim} {fa_dur} ease-in-out infinite; transform-origin: 39px 88px; }}
     .vinny-head {{ animation: vinny-tilt 6s ease-in-out infinite; transform-origin: 60px 62px; }}
     .vinny-leg-r {{ animation: vinny-kick 1.4s ease-in-out infinite; transform-origin: 65.5px 104px; }}
-    .vinny-ball {{ animation: vinny-juggle 1.4s ease-in-out infinite; transform-origin: 82px 112px; }}
-    .vinny-ball-shadow {{ animation: vinny-ball-shadow 1.4s ease-in-out infinite; transform-origin: 82px 120px; }}
+    .vinny-ball {{ animation: vinny-juggle 1.4s ease-in-out infinite; transform-origin: 86px 112px; }}
+    .vinny-ball-shadow {{ animation: vinny-ball-shadow 1.4s ease-in-out infinite; transform-origin: 86px 120px; }}
 
     @keyframes vinny-breathe {{
         0%, 100% {{ transform: scale(1); }}
@@ -159,22 +163,26 @@ def character_svg(mood: str = "neutral") -> str:
     }}
     @keyframes vinny-arm-idle {{
         0%, 100% {{ transform: rotate(0deg); }}
-        50%      {{ transform: rotate(-6deg); }}
+        50%      {{ transform: rotate(5deg); }}
     }}
-    @keyframes vinny-wave {{
-        0%, 100% {{ transform: rotate(150deg); }}
-        25%      {{ transform: rotate(171deg); }}
-        50%      {{ transform: rotate(150deg); }}
-        75%      {{ transform: rotate(171deg); }}
+    @keyframes vinny-arm-raise {{
+        0%, 100% {{ transform: rotate(135deg); }}
+    }}
+    @keyframes vinny-forearm-still {{
+        0%, 100% {{ transform: rotate(0deg); }}
+    }}
+    @keyframes vinny-forearm-wave {{
+        0%, 100% {{ transform: rotate(-15deg); }}
+        50%      {{ transform: rotate(15deg); }}
     }}
     @keyframes vinny-kick {{
         0%, 100% {{ transform: rotate(0deg); }}
-        15%      {{ transform: rotate(-17deg); }}
+        15%      {{ transform: rotate(-26deg); }}
         55%      {{ transform: rotate(-3deg); }}
     }}
     @keyframes vinny-juggle {{
         0%, 100% {{ transform: translateY(0) rotate(0deg); }}
-        50%      {{ transform: translateY(-19px) rotate(180deg); }}
+        50%      {{ transform: translateY(-16px) rotate(180deg); }}
     }}
     @keyframes vinny-ball-shadow {{
         0%, 100% {{ transform: scale(1); opacity: 0.18; }}
@@ -192,7 +200,7 @@ def character_svg(mood: str = "neutral") -> str:
              aria-label="Vinny, your money buddy">
             <ellipse cx="60" cy="120" rx="24" ry="3.5" fill="#00000012"/>
 
-            <ellipse class="vinny-ball-shadow" cx="82" cy="120" rx="7" ry="2.2" fill="#000000" opacity="0.18"/>
+            <ellipse class="vinny-ball-shadow" cx="86" cy="120" rx="7" ry="2.2" fill="#000000" opacity="0.18"/>
 
             <rect x="51" y="104" width="7" height="13" rx="3.5" fill="{_SKIN}"/>
             <rect x="45" y="116" width="14" height="6" rx="3" fill="#FFFFFF" stroke="#CBD1DA" stroke-width="0.8"/>
@@ -202,13 +210,6 @@ def character_svg(mood: str = "neutral") -> str:
                 <rect x="61" y="116" width="14" height="6" rx="3" fill="#FFFFFF" stroke="#CBD1DA" stroke-width="0.8"/>
             </g>
 
-            <g class="vinny-ball">
-                <circle cx="82" cy="112" r="7" fill="#FFFFFF" stroke="#2A3142" stroke-width="1"/>
-                <path d="M82,107.8 L85.0,110.0 L83.9,113.6 L80.1,113.6 L79.0,110.0 Z" fill="#2A3142"/>
-                <path d="M82,105 L84.3,106.6 L85.0,110.0 L82,107.8 L79.0,110.0 L79.7,106.6 Z" fill="#2A3142" opacity="0.55"/>
-                <path d="M75.6,111.4 L79.0,110.0 L80.1,113.6 L77.4,115.2 Z" fill="#2A3142" opacity="0.55"/>
-                <path d="M88.4,111.4 L85.0,110.0 L83.9,113.6 L86.6,115.2 Z" fill="#2A3142" opacity="0.55"/>
-            </g>
 
             <rect x="43" y="94" width="34" height="9" rx="2.5" fill="{_SHORTS}"/>
             <path d="M44,101 h13 v6 q0,2.5 -2.5,2.5 h-8 q-2.5,0 -2.5,-2.5 z" fill="{_SHORTS}"/>
@@ -220,13 +221,15 @@ def character_svg(mood: str = "neutral") -> str:
                   font-size="13" font-weight="700" fill="{_JERSEY_TRIM}">7</text>
 
             <g class="vinny-arm-l">
-                <rect x="35" y="85" width="8" height="16" rx="4" fill="{_SKIN}"/>
-                <circle cx="39" cy="101" r="4.6" fill="{_SKIN}"/>
+                <g class="vinny-forearm-l">
+                    <rect x="35" y="85" width="8" height="16" rx="4" fill="{_SKIN}"/>
+                    <circle cx="39" cy="101" r="4.6" fill="{_SKIN}"/>
+                </g>
+                <rect x="33" y="76" width="11" height="12" rx="4" fill="{_JERSEY}"/>
+                <rect x="34.8" y="78" width="1.5" height="8" rx="0.7" fill="{_JERSEY_TRIM}"/>
+                <rect x="37.2" y="78" width="1.5" height="8" rx="0.7" fill="{_JERSEY_TRIM}"/>
+                <rect x="39.6" y="78" width="1.5" height="8" rx="0.7" fill="{_JERSEY_TRIM}"/>
             </g>
-            <rect x="33" y="76" width="11" height="12" rx="4" fill="{_JERSEY}"/>
-            <rect x="34.8" y="78" width="1.5" height="8" rx="0.7" fill="{_JERSEY_TRIM}"/>
-            <rect x="37.2" y="78" width="1.5" height="8" rx="0.7" fill="{_JERSEY_TRIM}"/>
-            <rect x="39.6" y="78" width="1.5" height="8" rx="0.7" fill="{_JERSEY_TRIM}"/>
             <rect x="76" y="76" width="11" height="12" rx="4" fill="{_JERSEY}"/>
             <rect x="78.9" y="78" width="1.5" height="8" rx="0.7" fill="{_JERSEY_TRIM}"/>
             <rect x="81.3" y="78" width="1.5" height="8" rx="0.7" fill="{_JERSEY_TRIM}"/>
@@ -234,6 +237,14 @@ def character_svg(mood: str = "neutral") -> str:
             <rect x="77" y="85" width="8" height="16" rx="4" fill="{_SKIN}"/>
             <circle cx="81" cy="101" r="4.6" fill="{_SKIN}"/>
 
+
+            <g class="vinny-ball">
+                <circle cx="86" cy="112" r="7" fill="#FFFFFF" stroke="#2A3142" stroke-width="1"/>
+                <path d="M86,107.8 L89.0,110.0 L87.9,113.6 L84.1,113.6 L83.0,110.0 Z" fill="#2A3142"/>
+                <path d="M86,105 L88.3,106.6 L89.0,110.0 L86,107.8 L83.0,110.0 L83.7,106.6 Z" fill="#2A3142" opacity="0.55"/>
+                <path d="M79.6,111.4 L83.0,110.0 L84.1,113.6 L81.4,115.2 Z" fill="#2A3142" opacity="0.55"/>
+                <path d="M92.4,111.4 L89.0,110.0 L87.9,113.6 L90.6,115.2 Z" fill="#2A3142" opacity="0.55"/>
+            </g>
             <rect x="55" y="66" width="10" height="10" rx="3" fill="{_SKIN_SHADE}"/>
 
             <g class="vinny-head">
@@ -242,11 +253,11 @@ def character_svg(mood: str = "neutral") -> str:
 
                 <ellipse cx="60" cy="42" rx="25" ry="26" fill="{_SKIN}"/>
 
-                <path d="M33,57 C31,26 43,13 60,13 C77,13 89,26 87,57
-                         C85,43 83,34 79,28 C74,34 64,38 54,36
-                         C46,35 41,37 37,43 C35,47 34,52 33,57 z" fill="{_HAIR}"/>
-                <path d="M33,50 C33,58 34,62 36,66 C38,58 38,53 39,49 z" fill="{_HAIR}"/>
-                <path d="M87,50 C87,58 86,62 84,66 C82,58 82,53 81,49 z" fill="{_HAIR}"/>
+                <path d="M33,51 C31,26 43,13 60,13 C77,13 89,26 87,51
+                         C85,41 83,34 79,28 C74,34 64,38 54,36
+                         C46,35 41,37 37,43 C35,46 34,48 33,51 z" fill="{_HAIR}"/>
+                <path d="M33,49 C33,53 33.6,55 35,57 C36.4,53 36.8,51 37.4,48 z" fill="{_HAIR}"/>
+                <path d="M87,49 C87,53 86.4,55 85,57 C83.6,53 83.2,51 82.6,48 z" fill="{_HAIR}"/>
                 <path d="M47,19 C55,15 68,16 74,22 C65,19 55,19 47,19 z" fill="{_HAIR_HI}"/>
 
                 <circle cx="50" cy="{44 + py}" r="5.6" fill="#FFFFFF"/>
