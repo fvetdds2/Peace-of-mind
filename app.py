@@ -123,17 +123,27 @@ def _current_month_over_budget() -> bool:
     return bool((bva["actual"] > bva["budget_amount"]).any())
 
 try:
+    _month_key = datetime.date.today().strftime("%Y-%m")
     _summary = ds.net_worth_summary()
     _goals = ds.load_table("goals")
+    _month = ds.month_totals(_month_key)
     _over_budget = _current_month_over_budget()
     _first_load = not st.session_state.vinny_greeted
-    _mood = buddy.compute_mood(_summary, _goals, _over_budget, _first_load)
+
+    # Did income grow since the last rerun? Then Vinny celebrates.
+    _income_now = ds.income_total()
+    _income_before = st.session_state.get("_last_income_total")
+    _income_just_added = _income_before is not None and _income_now > _income_before
+    st.session_state["_last_income_total"] = _income_now
+
+    _vinny_mood = buddy.compute_vinny_mood(_summary, _goals, _month, _income_just_added, _first_load)
+    _mj_mood = buddy.compute_mj_mood(_month, _over_budget, _first_load)
     st.session_state.vinny_greeted = True
 except Exception:
-    _mood = "neutral"
+    _vinny_mood = _mj_mood = "neutral"
 
 with st.sidebar:
-    buddy.render(_mood, height=200)
+    buddy.render(_vinny_mood, height=200)
     st.markdown(
         '<div style="text-align:center; font-size:12px; color:#8A8F98; font-weight:600; '
         'letter-spacing:0.04em; margin-top:-8px;">VINNY · your money buddy</div>',
@@ -145,12 +155,17 @@ with st.sidebar:
         st.warning("No accounts configured — this app is unlocked and anyone with the link can see this data.", icon="⚠️")
 
 # Header row: title on the left, Ollie tucked into the top-right corner (always visible)
-head_left, head_right = st.columns([4, 1])
+head_left, head_right = st.columns([3, 2])
 with head_left:
     st.markdown('<div class="hero-label" style="font-size:13px;">🕊️ PEACE OF MIND</div>', unsafe_allow_html=True)
-    st.markdown('<p style="color:#8A8F98; margin-top:-8px; margin-bottom:24px;">Your net worth, budget, and properties — with an assistant that knows all of it.</p>', unsafe_allow_html=True)
+    st.markdown('<p style="color:#8A8F98; margin-top:-8px; margin-bottom:6px;">Your net worth, budget, and properties — with an assistant that knows all of it.</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<p style="color:#A3A8B0; font-size:13px; margin-top:0; margin-bottom:24px;">'
+        'Vinny &amp; MJ are here for the long game — build it, keep it, grow it.</p>',
+        unsafe_allow_html=True,
+    )
 with head_right:
-    buddy.render(_mood, height=170)
+    buddy.render_duo(_vinny_mood, _mj_mood, height=200)
 
 tabs = st.tabs(["📊 Net Worth", "🎯 Goals", "🏦 Accounts", "🧾 Expenses & Income", "📋 Budget", "🏠 Properties", "💬 Ask the Assistant"])
 

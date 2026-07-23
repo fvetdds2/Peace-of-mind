@@ -296,6 +296,20 @@ def net_worth_summary():
     }
 
 
+def month_totals(month: str) -> dict:
+    """Income and expense totals for a 'YYYY-MM' month."""
+    income = load_table("income")
+    expenses = load_table("expenses")
+    inc = float(income[income["month"] == month]["amount"].sum()) if not income.empty else 0.0
+    exp = float(expenses[expenses["month"] == month]["amount"].sum()) if not expenses.empty else 0.0
+    return {"income": inc, "expenses": exp, "net": inc - exp}
+
+
+def income_total() -> float:
+    df = load_table("income")
+    return float(df["amount"].sum()) if not df.empty else 0.0
+
+
 def budget_vs_actual(month: str):
     """month format 'YYYY-MM'. Returns DataFrame of category, budget, actual, remaining."""
     budgets = load_table("budgets")

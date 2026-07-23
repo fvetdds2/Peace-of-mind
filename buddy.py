@@ -30,6 +30,36 @@ _SHOE = "#2A3142"
 _MOUTH = "#B5654A"
 
 
+VINNY_LINES = {
+    "wave":    ["Oi, I am Vinny \U0001F44B"],
+    "income":  ["Oi! More income \U0001F389", "Oi \u2014 that's how we grow \U0001F4C8",
+                "Oi! Pay yourself first \U0001F4AA"],
+    "happy":   ["Oi \U0001F4AA", "Oi \u2014 ahead of the game \U0001F4C8",
+                "Oi \u2014 steady wins \U0001F31F"],
+    "worried": ["Oi... let's tighten up.", "Oi \u2014 we can fix this."],
+    "neutral": [""],
+}
+
+MJ_LINES = {
+    "wave":    ["Maybe... or maybe not \U0001F48E"],
+    "happy":   ["Maybe... or maybe not \U0001F60E", "Maybe or maybe not \U0001F48E"],
+    "worried": ["Maybe not \u2014 spending's up \U0001F440",
+                "Maybe or maybe not... watch it"],
+    "neutral": [""],
+}
+
+
+def _pick_line(bank: dict, mood: str) -> str:
+    """
+    Stable within a day, rotates over time — so the characters feel alive
+    without their bubbles flickering on every rerun.
+    """
+    import datetime as _dt
+    options = bank.get(mood) or [""]
+    idx = (_dt.date.today().toordinal() + len(mood)) % len(options)
+    return options[idx]
+
+
 def _mood_config(mood: str) -> dict:
     """Per-mood visual params: brows, pupil offset, mouth, body animation, speech."""
     configs = {
@@ -40,6 +70,16 @@ def _mood_config(mood: str) -> dict:
             "mouth": "happy",
             "body_anim": "vinny-bounce",
             "speech": "Looking good! \U0001F389",
+            "speech_bg": "#E9F7EF",
+            "speech_color": "#1E7A48",
+        },
+        "income": {
+            "brow_left": "M44,36 Q50,33 56,35",
+            "brow_right": "M64,35 Q70,33 76,36",
+            "pupil_dy": 0,
+            "mouth": "happy",
+            "body_anim": "vinny-bounce",
+            "speech": "More income! \U0001F389",
             "speech_bg": "#E9F7EF",
             "speech_color": "#1E7A48",
         },
@@ -95,7 +135,8 @@ def _mouth_path(kind: str) -> str:
 
 
 def character_svg(mood: str = "neutral") -> str:
-    cfg = _mood_config(mood)
+    cfg = dict(_mood_config(mood))
+    cfg["speech"] = _pick_line(VINNY_LINES, mood) if cfg["speech"] else cfg["speech"]
     if mood == "wave":
         arm_anim, forearm_anim, fa_dur = "vinny-arm-raise", "vinny-forearm-wave", "0.9s"
     else:
@@ -300,6 +341,53 @@ def render(mood: str = "neutral", height: int = 190) -> None:
     components.html(html, height=height)
 
 
+def compute_vinny_mood(summary: dict, goals_df, month: dict,
+                       income_just_added: bool, first_load: bool) -> str:
+    """
+    Vinny watches the upside.
+    Priority: greeting -> income just added -> goal reached -> income beats
+    spending -> positive net worth -> neutral.
+    """
+    if first_load:
+        return "wave"
+    if income_just_added:
+        return "income"
+
+    if goals_df is not None and not goals_df.empty:
+        try:
+            import data_store as ds
+            for _, g in goals_df.iterrows():
+                current, _ = ds.goal_current_value(g)
+                if g["target_amount"] and current >= g["target_amount"]:
+                    return "happy"
+        except Exception:
+            pass
+
+    if month and month.get("income", 0) > month.get("expenses", 0):
+        return "happy"
+    if summary and summary.get("net_worth", 0) > 0:
+        return "happy"
+    return "neutral"
+
+
+def compute_mj_mood(month: dict, over_budget: bool, first_load: bool) -> str:
+    """
+    MJ watches the downside: he frets when the month's spending
+    outruns the month's income.
+    """
+    if first_load:
+        return "wave"
+    if month:
+        inc, exp = month.get("income", 0), month.get("expenses", 0)
+        if exp > inc and exp > 0:
+            return "worried"
+        if inc > exp and inc > 0:
+            return "happy"
+    if over_budget:
+        return "worried"
+    return "neutral"
+
+
 def compute_mood(summary: dict, goals_df, over_budget: bool, first_load: bool) -> str:
     """
     Decide Vinny's mood from real financial state.
@@ -329,3 +417,213 @@ def compute_mood(summary: dict, goals_df, over_budget: bool, first_load: bool) -
 
 # Backwards-compatible alias so older calls keep working.
 owl_svg = character_svg
+
+
+# ---------------------------------------------------------------------------
+# MJ — Vinny's friend, floating in a luxury pool
+# ---------------------------------------------------------------------------
+
+_POOL = "#3FA9E0"
+_POOL_LIGHT = "#8FD9F5"
+_POOL_DEEP = "#2E8CBE"
+_FLOAT = "#E8B44A"
+_FLOAT_HI = "#F7D488"
+_VEST = "#DFE5EF"
+_VEST_DARK = "#B4BFCF"
+_GOLD = "#F2C230"
+
+
+def _mj_face(mood: str) -> dict:
+    faces = {
+        "happy": {
+            "brow_l": "M45,36 Q50,33 55,35", "brow_r": "M65,35 Q70,33 75,36",
+            "pupil_dy": 0, "speech": "Yo! \U0001F48E",
+            "bg": "#E9F7EF", "fg": "#1E7A48",
+            "mouth": '<path d="M53,50 Q60,60 67,50 Z" fill="#8E3B2C"/>'
+                     '<path d="M54.5,50 Q60,54 65.5,50 Z" fill="#FFFFFF"/>',
+        },
+        "worried": {
+            "brow_l": "M45,34 Q50,38 55,36", "brow_r": "M65,36 Q70,38 75,34",
+            "pupil_dy": 2, "speech": "Spending > income",
+            "bg": "#FCECEC", "fg": "#B23333",
+            "mouth": '<path d="M55,55 Q60,50 65,55" fill="none" stroke="#B5654A" '
+                     'stroke-width="2.2" stroke-linecap="round"/>',
+        },
+        "wave": {
+            "brow_l": "M45,36 Q50,33 55,35", "brow_r": "M65,35 Q70,33 75,36",
+            "pupil_dy": 0, "speech": "Yo! \U0001F48E",
+            "bg": "#EAF1FE", "fg": "#1E4FB0",
+            "mouth": '<path d="M53,50 Q60,60 67,50 Z" fill="#8E3B2C"/>'
+                     '<path d="M54.5,50 Q60,54 65.5,50 Z" fill="#FFFFFF"/>',
+        },
+        "neutral": {
+            "brow_l": "M45,36 Q50,34 55,36", "brow_r": "M65,36 Q70,34 75,36",
+            "pupil_dy": 0, "speech": "",
+            "bg": "#F2F3F5", "fg": "#3C3F45",
+            "mouth": '<line x1="56" y1="53" x2="64" y2="53" stroke="#B5654A" '
+                     'stroke-width="2.2" stroke-linecap="round"/>',
+        },
+    }
+    return faces.get(mood, faces["neutral"])
+
+
+def mj_svg(mood: str = "neutral") -> str:
+    f = dict(_mj_face(mood))
+    f["speech"] = _pick_line(MJ_LINES, mood) if f["speech"] else f["speech"]
+    py = f["pupil_dy"]
+
+    speech_html = ""
+    if f["speech"]:
+        speech_html = (
+            f'<div class="mj-speech" style="background:{f["bg"]}; color:{f["fg"]};">'
+            f'{f["speech"]}</div>'
+        )
+
+    return f"""
+    <style>
+    .mj-wrap {{
+        position: relative; width: 130px;
+        display: flex; flex-direction: column; align-items: center; gap: 6px;
+        font-family: 'Inter', -apple-system, sans-serif;
+    }}
+    .mj-speech {{
+        font-size: 12px; font-weight: 600; padding: 6px 10px;
+        border-radius: 12px; white-space: nowrap;
+        animation: mj-pop 0.4s ease-out;
+    }}
+    .mj-float {{ animation: mj-bob 3.4s ease-in-out infinite; transform-origin: 60px 96px; }}
+    .mj-eyelid {{ animation: mj-blink 5.2s infinite; transform-origin: center; }}
+    .mj-ripple-a {{ animation: mj-ripple 3.4s ease-in-out infinite; transform-origin: 60px 100px; }}
+    .mj-ripple-b {{ animation: mj-ripple 3.4s ease-in-out infinite 1.2s; transform-origin: 60px 110px; }}
+    .mj-sparkle {{ animation: mj-twinkle 2.2s ease-in-out infinite; }}
+    .mj-sparkle-b {{ animation: mj-twinkle 2.2s ease-in-out infinite 1.1s; }}
+
+    @keyframes mj-bob {{
+        0%, 100% {{ transform: translateY(0) rotate(0deg); }}
+        50%      {{ transform: translateY(-3px) rotate(1.5deg); }}
+    }}
+    @keyframes mj-blink {{
+        0%, 93%, 100% {{ transform: scaleY(0); }}
+        96%, 98%      {{ transform: scaleY(1); }}
+    }}
+    @keyframes mj-ripple {{
+        0%, 100% {{ transform: scaleX(1); opacity: 0.55; }}
+        50%      {{ transform: scaleX(1.12); opacity: 0.25; }}
+    }}
+    @keyframes mj-twinkle {{
+        0%, 100% {{ opacity: 0.45; }}
+        50%      {{ opacity: 1; }}
+    }}
+    @keyframes mj-pop {{
+        0%   {{ transform: scale(0.6); opacity: 0; }}
+        100% {{ transform: scale(1); opacity: 1; }}
+    }}
+    </style>
+    <div class="mj-wrap">
+        {speech_html}
+        <svg width="130" height="130" viewBox="0 0 120 126"
+             xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="MJ, floating in the pool">
+
+            <!-- luxury pool -->
+            <rect x="0" y="86" width="120" height="40" rx="9" fill="{_POOL}"/>
+            <rect x="0" y="86" width="120" height="5" rx="2.5" fill="{_POOL_LIGHT}" opacity="0.85"/>
+            <ellipse class="mj-ripple-a" cx="60" cy="102" rx="42" ry="4"
+                     fill="none" stroke="{_POOL_LIGHT}" stroke-width="1.6" opacity="0.55"/>
+            <ellipse class="mj-ripple-b" cx="60" cy="112" rx="34" ry="3.5"
+                     fill="none" stroke="{_POOL_LIGHT}" stroke-width="1.4" opacity="0.45"/>
+            <path d="M8,120 q10,-4 20,0 q10,4 20,0" fill="none"
+                  stroke="{_POOL_DEEP}" stroke-width="1.5" opacity="0.5"/>
+
+            <g class="mj-float">
+                <!-- float ring, back half -->
+                <path d="M31,95 A29,8 0 0 1 89,95" fill="none"
+                      stroke="{_FLOAT}" stroke-width="9" stroke-linecap="round"/>
+                <path d="M36,91 A24,6 0 0 1 60,88" fill="none"
+                      stroke="{_FLOAT_HI}" stroke-width="2.4" stroke-linecap="round" opacity="0.9"/>
+
+                <!-- arms resting on the ring -->
+                <path d="M47,66 Q35,74 31,90" fill="none" stroke="{_SKIN}"
+                      stroke-width="7" stroke-linecap="round"/>
+                <path d="M73,66 Q85,74 89,90" fill="none" stroke="{_SKIN}"
+                      stroke-width="7" stroke-linecap="round"/>
+
+                <!-- torso -->
+                <path d="M46,62 q14,-5 28,0 l2,30 q-16,4 -32,0 z" fill="{_SKIN}"/>
+
+                <!-- diamond vest -->
+                <path d="M46,62 q5,-2 9,-3 l5,11 -4,23 -12,-1 z" fill="{_VEST}"/>
+                <path d="M74,62 q-5,-2 -9,-3 l-5,11 4,23 12,-1 z" fill="{_VEST}"/>
+                <path d="M46,62 q5,-2 9,-3" fill="none" stroke="{_VEST_DARK}" stroke-width="1.1"/>
+                <path d="M74,62 q-5,-2 -9,-3" fill="none" stroke="{_VEST_DARK}" stroke-width="1.1"/>
+                <g class="mj-sparkle">
+                    <path d="M50,72 l2,3 -2,3 -2,-3 z" fill="#FFFFFF"/>
+                    <path d="M70,80 l2,3 -2,3 -2,-3 z" fill="#FFFFFF"/>
+                </g>
+                <g class="mj-sparkle-b">
+                    <path d="M70,71 l2,3 -2,3 -2,-3 z" fill="#CDEBFA"/>
+                    <path d="M50,82 l2,3 -2,3 -2,-3 z" fill="#CDEBFA"/>
+                </g>
+
+                <!-- rapper chain + diamond pendant -->
+                <path d="M52,59 Q60,80 68,59" fill="none" stroke="{_GOLD}"
+                      stroke-width="2.6" stroke-linecap="round"/>
+                <circle cx="60" cy="74" r="5" fill="{_GOLD}"/>
+                <path d="M60,70.2 L63,74 L60,77.8 L57,74 z" fill="#FFFFFF"/>
+
+                <!-- neck + head -->
+                <rect x="55" y="56" width="10" height="9" rx="3" fill="{_SKIN_SHADE}"/>
+                <circle cx="38" cy="44" r="4.5" fill="{_SKIN_SHADE}"/>
+                <circle cx="82" cy="44" r="4.5" fill="{_SKIN_SHADE}"/>
+                <ellipse cx="60" cy="41" rx="22" ry="23" fill="{_SKIN}"/>
+
+                <!-- dark hair with a longer textured fringe -->
+                <path d="M38,46 C36,22 47,12 60,12 C73,12 84,22 82,46
+                         C80,36 78,30 75,26 C69,33 59,36 50,33
+                         C45,32 41,37 38,46 z" fill="{_HAIR}"/>
+                <path d="M45,32 l2.5,13 3,-12 z" fill="{_HAIR}"/>
+                <path d="M53,30 l2.5,14 3,-13 z" fill="{_HAIR}"/>
+                <path d="M61,30 l2.5,13 3,-12 z" fill="{_HAIR}"/>
+                <path d="M69,31 l2.5,12 3,-11 z" fill="{_HAIR}"/>
+                <path d="M49,17 C56,13 67,14 72,19 C64,16 56,16 49,17 z" fill="{_HAIR_HI}"/>
+
+                <!-- eyes -->
+                <circle cx="51" cy="{43 + py}" r="5.2" fill="#FFFFFF"/>
+                <circle cx="69" cy="{43 + py}" r="5.2" fill="#FFFFFF"/>
+                <circle cx="51" cy="{43 + py}" r="3.1" fill="#2A2140"/>
+                <circle cx="69" cy="{43 + py}" r="3.1" fill="#2A2140"/>
+                <circle cx="52.2" cy="{41.8 + py}" r="1.1" fill="#FFFFFF"/>
+                <circle cx="70.2" cy="{41.8 + py}" r="1.1" fill="#FFFFFF"/>
+                <g class="mj-eyelid">
+                    <rect x="45" y="37" width="12" height="7" rx="3.5" fill="{_SKIN}"/>
+                    <rect x="63" y="37" width="12" height="7" rx="3.5" fill="{_SKIN}"/>
+                </g>
+
+                <path d="{f['brow_l']}" fill="none" stroke="{_HAIR}"
+                      stroke-width="2.3" stroke-linecap="round"/>
+                <path d="{f['brow_r']}" fill="none" stroke="{_HAIR}"
+                      stroke-width="2.3" stroke-linecap="round"/>
+                <ellipse cx="60" cy="48" rx="1.9" ry="1.5" fill="{_SKIN_SHADE}"/>
+                {f['mouth']}
+
+                <!-- float ring, front half -->
+                <path d="M31,95 A29,8 0 0 0 89,95" fill="none"
+                      stroke="{_FLOAT}" stroke-width="9" stroke-linecap="round"/>
+                <path d="M40,99 A20,5 0 0 0 62,101" fill="none"
+                      stroke="{_FLOAT_HI}" stroke-width="2.2" stroke-linecap="round" opacity="0.8"/>
+            </g>
+        </svg>
+    </div>"""
+
+
+def render_duo(vinny_mood: str = "neutral", mj_mood: str = "neutral",
+               height: int = 200) -> None:
+    """Render Vinny and MJ side by side, each with its own mood."""
+    import streamlit.components.v1 as components
+    html = f"""
+    <div style="display:flex; justify-content:center; align-items:flex-end; gap:2px;
+                background:transparent; font-family:'Inter',sans-serif;">
+        {character_svg(vinny_mood)}
+        {mj_svg(mj_mood)}
+    </div>"""
+    components.html(html, height=height)
