@@ -1,69 +1,74 @@
 """
-Ollie the Owl — an animated financial buddy for Peace of Mind.
+Vinny — an animated financial buddy for Peace of Mind.
 
-Renders a self-contained animated SVG owl in a fixed corner slot.
-The owl's expression + motion react to the user's real financial state,
-which is passed in as a simple `mood` string.
+Renders a self-contained animated SVG character (a friendly boy with dark
+brown hair) whose expression and motion react to the user's real financial
+state, passed in as a simple `mood` string.
 
 Moods:
-    "happy"     -> goal reached / on track / positive net worth trend
+    "happy"     -> goal reached / on track / positive net worth
     "worried"   -> over budget / declining trend
-    "neutral"   -> default idle (breathing, blinking, occasional head tilt)
+    "neutral"   -> default idle (breathing, blinking, gentle head tilt)
     "wave"      -> greeting on first load
 
-The SVG uses only CSS animations (no JS), so it stays lightweight and
-survives Streamlit's full-page reruns without special handling.
+The SVG uses only CSS animations (no JS) and is rendered through
+components.html so the animations reliably run inside Streamlit.
 """
 
-# Color palette tuned to the app's blue accent.
-_BODY = "#7C5CCF"      # soft purple body (owls read well in purple/blue)
-_BODY_DARK = "#6647B5"
-_BELLY = "#EDE7FB"
-_EYE_RING = "#FFFFFF"
-_BEAK = "#F2A93B"
-_FEET = "#F2A93B"
-_ACCENT = "#2F6FED"
+# Palette
+_SKIN = "#E8B183"
+_SKIN_SHADE = "#D2996A"
+_HAIR = "#20150E"        # dark brown, near-black
+_HAIR_HI = "#35241A"     # subtle highlight
+_JERSEY = "#2F6FED"
+_JERSEY_TRIM = "#FFFFFF"
+_SHORTS = "#2A3550"
+_SHIRT = "#2F6FED"
+_SHIRT_DARK = "#255BC7"
+_PANTS = "#3C4A63"
+_SHOE = "#2A3142"
+_MOUTH = "#B5654A"
 
 
 def _mood_config(mood: str) -> dict:
-    """Returns per-mood visual params: pupil position, brow angle, speech text, body animation."""
+    """Per-mood visual params: brows, pupil offset, mouth, body animation, speech."""
     configs = {
         "happy": {
-            "brow_left": "M32,44 Q40,40 48,44",
-            "brow_right": "M72,44 Q80,40 88,44",
+            "brow_left": "M44,36 Q50,33 56,35",
+            "brow_right": "M64,35 Q70,33 76,36",
             "pupil_dy": 0,
             "mouth": "happy",
-            "body_anim": "ollie-bounce",
-            "speech": "Looking good! 🎉",
+            "body_anim": "vinny-bounce",
+            "speech": "Looking good! \U0001F389",
             "speech_bg": "#E9F7EF",
             "speech_color": "#1E7A48",
         },
         "worried": {
-            "brow_left": "M32,42 Q40,46 48,43",
-            "brow_right": "M72,43 Q80,46 88,42",
+            "brow_left": "M44,34 Q50,38 56,36",
+            "brow_right": "M64,36 Q70,38 76,34",
             "pupil_dy": 2,
             "mouth": "worried",
-            "body_anim": "ollie-fret",
+            "body_anim": "vinny-fret",
             "speech": "Let's watch this one.",
             "speech_bg": "#FCECEC",
             "speech_color": "#B23333",
         },
         "wave": {
-            "brow_left": "M32,44 Q40,41 48,44",
-            "brow_right": "M72,44 Q80,41 88,44",
+            "brow_left": "M44,36 Q50,33 56,35",
+            "brow_right": "M64,35 Q70,33 76,36",
             "pupil_dy": 0,
             "mouth": "happy",
-            "body_anim": "ollie-breathe",
-            "speech": "Hi, I'm Ollie! 👋",
+            "body_anim": "vinny-breathe",
+            "speech": "Hi, I'm Vinny! \U0001F44B",
             "speech_bg": "#EAF1FE",
             "speech_color": "#1E4FB0",
         },
         "neutral": {
-            "brow_left": "M32,44 Q40,42 48,44",
-            "brow_right": "M72,44 Q80,42 88,44",
+            "brow_left": "M44,36 Q50,34 56,36",
+            "brow_right": "M64,36 Q70,34 76,36",
             "pupil_dy": 0,
             "mouth": "neutral",
-            "body_anim": "ollie-breathe",
+            "body_anim": "vinny-breathe",
             "speech": "",
             "speech_bg": "#F2F3F5",
             "speech_color": "#3C3F45",
@@ -74,15 +79,203 @@ def _mood_config(mood: str) -> dict:
 
 def _mouth_path(kind: str) -> str:
     if kind == "happy":
-        return '<path d="M54,72 Q60,78 66,72" fill="none" stroke="#B5842A" stroke-width="2" stroke-linecap="round"/>'
+        return (
+            '<path d="M51,53 Q60,65 69,53 Z" fill="#8E3B2C"/>'
+            '<path d="M52.5,53 Q60,57.5 67.5,53 Z" fill="#FFFFFF"/>'
+        )
     if kind == "worried":
-        return '<path d="M54,76 Q60,71 66,76" fill="none" stroke="#B5842A" stroke-width="2" stroke-linecap="round"/>'
-    return '<line x1="56" y1="74" x2="64" y2="74" stroke="#B5842A" stroke-width="2" stroke-linecap="round"/>'
+        return (
+            f'<path d="M54,58 Q60,53 66,58" fill="none" stroke="{_MOUTH}" '
+            'stroke-width="2.2" stroke-linecap="round"/>'
+        )
+    return (
+        f'<line x1="55" y1="56" x2="65" y2="56" stroke="{_MOUTH}" '
+        'stroke-width="2.2" stroke-linecap="round"/>'
+    )
+
+
+def character_svg(mood: str = "neutral") -> str:
+    cfg = _mood_config(mood)
+    arm_anim = "vinny-wave" if mood == "wave" else "vinny-arm-idle"
+    py = cfg["pupil_dy"]
+
+    speech_html = ""
+    if cfg["speech"]:
+        speech_html = (
+            f'<div class="vinny-speech" style="background:{cfg["speech_bg"]};'
+            f' color:{cfg["speech_color"]};">{cfg["speech"]}</div>'
+        )
+
+    return f"""
+    <style>
+    .vinny-wrap {{
+        position: relative;
+        width: 130px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        font-family: 'Inter', -apple-system, sans-serif;
+    }}
+    .vinny-speech {{
+        font-size: 12px;
+        font-weight: 600;
+        padding: 6px 10px;
+        border-radius: 12px;
+        white-space: nowrap;
+        animation: vinny-pop 0.4s ease-out;
+    }}
+    .vinny-svg {{ animation: {cfg['body_anim']} 3s ease-in-out infinite; transform-origin: 60px 112px; }}
+    .vinny-eyelid {{ animation: vinny-blink 4.5s infinite; transform-origin: center; }}
+    .vinny-arm-l {{ animation: {arm_anim} 2.5s ease-in-out infinite; transform-origin: 39px 87px; }}
+    .vinny-head {{ animation: vinny-tilt 6s ease-in-out infinite; transform-origin: 60px 62px; }}
+    .vinny-leg-r {{ animation: vinny-kick 1.4s ease-in-out infinite; transform-origin: 65.5px 104px; }}
+    .vinny-ball {{ animation: vinny-juggle 1.4s ease-in-out infinite; transform-origin: 82px 112px; }}
+    .vinny-ball-shadow {{ animation: vinny-ball-shadow 1.4s ease-in-out infinite; transform-origin: 82px 120px; }}
+
+    @keyframes vinny-breathe {{
+        0%, 100% {{ transform: scale(1); }}
+        50%      {{ transform: scale(1.03); }}
+    }}
+    @keyframes vinny-bounce {{
+        0%, 100% {{ transform: translateY(0); }}
+        30%      {{ transform: translateY(-6px); }}
+        50%      {{ transform: translateY(0); }}
+        70%      {{ transform: translateY(-3px); }}
+    }}
+    @keyframes vinny-fret {{
+        0%, 100% {{ transform: rotate(0deg); }}
+        25%      {{ transform: rotate(-2deg); }}
+        75%      {{ transform: rotate(2deg); }}
+    }}
+    @keyframes vinny-blink {{
+        0%, 92%, 100% {{ transform: scaleY(0); }}
+        95%, 97%      {{ transform: scaleY(1); }}
+    }}
+    @keyframes vinny-tilt {{
+        0%, 100% {{ transform: rotate(0deg); }}
+        40%      {{ transform: rotate(-4deg); }}
+        60%      {{ transform: rotate(4deg); }}
+    }}
+    @keyframes vinny-arm-idle {{
+        0%, 100% {{ transform: rotate(0deg); }}
+        50%      {{ transform: rotate(-6deg); }}
+    }}
+    @keyframes vinny-wave {{
+        0%, 100% {{ transform: rotate(150deg); }}
+        25%      {{ transform: rotate(171deg); }}
+        50%      {{ transform: rotate(150deg); }}
+        75%      {{ transform: rotate(171deg); }}
+    }}
+    @keyframes vinny-kick {{
+        0%, 100% {{ transform: rotate(0deg); }}
+        15%      {{ transform: rotate(-17deg); }}
+        55%      {{ transform: rotate(-3deg); }}
+    }}
+    @keyframes vinny-juggle {{
+        0%, 100% {{ transform: translateY(0) rotate(0deg); }}
+        50%      {{ transform: translateY(-19px) rotate(180deg); }}
+    }}
+    @keyframes vinny-ball-shadow {{
+        0%, 100% {{ transform: scale(1); opacity: 0.18; }}
+        50%      {{ transform: scale(0.6); opacity: 0.08; }}
+    }}
+    @keyframes vinny-pop {{
+        0%   {{ transform: scale(0.6); opacity: 0; }}
+        100% {{ transform: scale(1); opacity: 1; }}
+    }}
+    </style>
+    <div class="vinny-wrap">
+        {speech_html}
+        <svg class="vinny-svg" width="130" height="130" viewBox="0 0 120 126"
+             xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Vinny, your money buddy">
+            <ellipse cx="60" cy="120" rx="24" ry="3.5" fill="#00000012"/>
+
+            <ellipse class="vinny-ball-shadow" cx="82" cy="120" rx="7" ry="2.2" fill="#000000" opacity="0.18"/>
+
+            <rect x="51" y="104" width="7" height="13" rx="3.5" fill="{_SKIN}"/>
+            <rect x="45" y="116" width="14" height="6" rx="3" fill="#FFFFFF" stroke="#CBD1DA" stroke-width="0.8"/>
+
+            <g class="vinny-leg-r">
+                <rect x="62" y="104" width="7" height="13" rx="3.5" fill="{_SKIN}"/>
+                <rect x="61" y="116" width="14" height="6" rx="3" fill="#FFFFFF" stroke="#CBD1DA" stroke-width="0.8"/>
+            </g>
+
+            <g class="vinny-ball">
+                <circle cx="82" cy="112" r="7" fill="#FFFFFF" stroke="#2A3142" stroke-width="1"/>
+                <path d="M82,107.8 L85.0,110.0 L83.9,113.6 L80.1,113.6 L79.0,110.0 Z" fill="#2A3142"/>
+                <path d="M82,105 L84.3,106.6 L85.0,110.0 L82,107.8 L79.0,110.0 L79.7,106.6 Z" fill="#2A3142" opacity="0.55"/>
+                <path d="M75.6,111.4 L79.0,110.0 L80.1,113.6 L77.4,115.2 Z" fill="#2A3142" opacity="0.55"/>
+                <path d="M88.4,111.4 L85.0,110.0 L83.9,113.6 L86.6,115.2 Z" fill="#2A3142" opacity="0.55"/>
+            </g>
+
+            <rect x="43" y="94" width="34" height="9" rx="2.5" fill="{_SHORTS}"/>
+            <path d="M44,101 h13 v6 q0,2.5 -2.5,2.5 h-8 q-2.5,0 -2.5,-2.5 z" fill="{_SHORTS}"/>
+            <path d="M63,101 h13 v6 q0,2.5 -2.5,2.5 h-8 q-2.5,0 -2.5,-2.5 z" fill="{_SHORTS}"/>
+
+            <path d="M42,76 q18,-6 36,0 l3,21 q-21,5 -42,0 z" fill="{_JERSEY}"/>
+            <path d="M54,74 q6,7 12,0 l-2,-3 q-4,4 -8,0 z" fill="{_JERSEY_TRIM}"/>
+            <text x="60" y="93" text-anchor="middle" font-family="Inter, sans-serif"
+                  font-size="13" font-weight="700" fill="{_JERSEY_TRIM}">7</text>
+
+            <g class="vinny-arm-l">
+                <rect x="35" y="85" width="8" height="16" rx="4" fill="{_SKIN}"/>
+                <circle cx="39" cy="101" r="4.6" fill="{_SKIN}"/>
+            </g>
+            <rect x="33" y="76" width="11" height="12" rx="4" fill="{_JERSEY}"/>
+            <rect x="34.8" y="78" width="1.5" height="8" rx="0.7" fill="{_JERSEY_TRIM}"/>
+            <rect x="37.2" y="78" width="1.5" height="8" rx="0.7" fill="{_JERSEY_TRIM}"/>
+            <rect x="39.6" y="78" width="1.5" height="8" rx="0.7" fill="{_JERSEY_TRIM}"/>
+            <rect x="76" y="76" width="11" height="12" rx="4" fill="{_JERSEY}"/>
+            <rect x="78.9" y="78" width="1.5" height="8" rx="0.7" fill="{_JERSEY_TRIM}"/>
+            <rect x="81.3" y="78" width="1.5" height="8" rx="0.7" fill="{_JERSEY_TRIM}"/>
+            <rect x="83.7" y="78" width="1.5" height="8" rx="0.7" fill="{_JERSEY_TRIM}"/>
+            <rect x="77" y="85" width="8" height="16" rx="4" fill="{_SKIN}"/>
+            <circle cx="81" cy="101" r="4.6" fill="{_SKIN}"/>
+
+            <rect x="55" y="66" width="10" height="10" rx="3" fill="{_SKIN_SHADE}"/>
+
+            <g class="vinny-head">
+                <circle cx="34" cy="45" r="5" fill="{_SKIN_SHADE}"/>
+                <circle cx="86" cy="45" r="5" fill="{_SKIN_SHADE}"/>
+
+                <ellipse cx="60" cy="42" rx="25" ry="26" fill="{_SKIN}"/>
+
+                <path d="M33,57 C31,26 43,13 60,13 C77,13 89,26 87,57
+                         C85,43 83,34 79,28 C74,34 64,38 54,36
+                         C46,35 41,37 37,43 C35,47 34,52 33,57 z" fill="{_HAIR}"/>
+                <path d="M33,50 C33,58 34,62 36,66 C38,58 38,53 39,49 z" fill="{_HAIR}"/>
+                <path d="M87,50 C87,58 86,62 84,66 C82,58 82,53 81,49 z" fill="{_HAIR}"/>
+                <path d="M47,19 C55,15 68,16 74,22 C65,19 55,19 47,19 z" fill="{_HAIR_HI}"/>
+
+                <circle cx="50" cy="{44 + py}" r="5.6" fill="#FFFFFF"/>
+                <circle cx="70" cy="{44 + py}" r="5.6" fill="#FFFFFF"/>
+                <circle cx="50" cy="{44 + py}" r="3.4" fill="#2A2140"/>
+                <circle cx="70" cy="{44 + py}" r="3.4" fill="#2A2140"/>
+                <circle cx="51.4" cy="{42.6 + py}" r="1.2" fill="#FFFFFF"/>
+                <circle cx="71.4" cy="{42.6 + py}" r="1.2" fill="#FFFFFF"/>
+
+                <g class="vinny-eyelid">
+                    <rect x="43" y="37" width="14" height="8" rx="4" fill="{_SKIN}"/>
+                    <rect x="63" y="37" width="14" height="8" rx="4" fill="{_SKIN}"/>
+                </g>
+
+                <path d="{cfg['brow_left']}" fill="none" stroke="{_HAIR}"
+                      stroke-width="2.4" stroke-linecap="round"/>
+                <path d="{cfg['brow_right']}" fill="none" stroke="{_HAIR}"
+                      stroke-width="2.4" stroke-linecap="round"/>
+
+                <ellipse cx="60" cy="50" rx="2" ry="1.6" fill="{_SKIN_SHADE}"/>
+                {_mouth_path(cfg['mouth'])}
+            </g>
+        </svg>
+    </div>"""
 
 
 def render(mood: str = "neutral", height: int = 190) -> None:
     """
-    Render Ollie into the Streamlit app via components.html (an iframe),
+    Render Vinny into the Streamlit app via components.html (an iframe),
     which reliably runs the SVG's CSS animations. st.markdown with
     unsafe_allow_html strips <style>/animation in many Streamlit versions,
     so we avoid it for the animated character.
@@ -91,141 +284,19 @@ def render(mood: str = "neutral", height: int = 190) -> None:
     html = f"""
     <div style="display:flex; justify-content:center; align-items:flex-start;
                 background:transparent; font-family:'Inter',sans-serif;">
-        {owl_svg(mood)}
+        {character_svg(mood)}
     </div>"""
     components.html(html, height=height)
 
 
-def owl_svg(mood: str = "neutral") -> str:
-    cfg = _mood_config(mood)
-    wing_anim = "ollie-wave" if mood == "wave" else "ollie-wing-idle"
-
-    speech_html = ""
-    if cfg["speech"]:
-        speech_html = f"""
-        <div class="ollie-speech" style="background:{cfg['speech_bg']}; color:{cfg['speech_color']};">
-            {cfg['speech']}
-        </div>"""
-
-    return f"""
-    <style>
-    .ollie-wrap {{
-        position: relative;
-        width: 120px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 6px;
-        font-family: 'Inter', sans-serif;
-    }}
-    .ollie-speech {{
-        font-size: 12px;
-        font-weight: 600;
-        padding: 6px 10px;
-        border-radius: 12px;
-        white-space: nowrap;
-        animation: ollie-pop 0.4s ease-out;
-    }}
-    .ollie-svg {{ animation: {cfg['body_anim']} 3s ease-in-out infinite; transform-origin: 60px 90px; }}
-    .ollie-eyelid {{ animation: ollie-blink 4.5s infinite; transform-origin: center; }}
-    .ollie-wing-l {{ animation: {wing_anim} 2.5s ease-in-out infinite; transform-origin: 30px 70px; }}
-    .ollie-wing-r {{ transform-origin: 90px 70px; }}
-    .ollie-head {{ animation: ollie-tilt 6s ease-in-out infinite; transform-origin: 60px 55px; }}
-
-    @keyframes ollie-breathe {{
-        0%, 100% {{ transform: scale(1); }}
-        50%      {{ transform: scale(1.03); }}
-    }}
-    @keyframes ollie-bounce {{
-        0%, 100% {{ transform: translateY(0); }}
-        30%      {{ transform: translateY(-6px); }}
-        50%      {{ transform: translateY(0); }}
-        70%      {{ transform: translateY(-3px); }}
-    }}
-    @keyframes ollie-fret {{
-        0%, 100% {{ transform: rotate(0deg); }}
-        25%      {{ transform: rotate(-2deg); }}
-        75%      {{ transform: rotate(2deg); }}
-    }}
-    @keyframes ollie-blink {{
-        0%, 92%, 100% {{ transform: scaleY(0); }}
-        95%, 97%      {{ transform: scaleY(1); }}
-    }}
-    @keyframes ollie-tilt {{
-        0%, 100% {{ transform: rotate(0deg); }}
-        40%      {{ transform: rotate(-4deg); }}
-        60%      {{ transform: rotate(4deg); }}
-    }}
-    @keyframes ollie-wing-idle {{
-        0%, 100% {{ transform: rotate(0deg); }}
-        50%      {{ transform: rotate(-8deg); }}
-    }}
-    @keyframes ollie-wave {{
-        0%, 100% {{ transform: rotate(0deg); }}
-        20%      {{ transform: rotate(-28deg); }}
-        40%      {{ transform: rotate(-10deg); }}
-        60%      {{ transform: rotate(-28deg); }}
-        80%      {{ transform: rotate(-10deg); }}
-    }}
-    @keyframes ollie-pop {{
-        0%   {{ transform: scale(0.6); opacity: 0; }}
-        100% {{ transform: scale(1); opacity: 1; }}
-    }}
-    </style>
-    <div class="ollie-wrap">
-        {speech_html}
-        <svg class="ollie-svg" width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ollie the owl financial buddy">
-            <ellipse cx="60" cy="112" rx="26" ry="4" fill="#00000012"/>
-            <!-- feet -->
-            <path d="M50,100 l-4,8 M50,100 l0,9 M50,100 l4,8" stroke="{_FEET}" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-            <path d="M70,100 l-4,8 M70,100 l0,9 M70,100 l4,8" stroke="{_FEET}" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-            <!-- body -->
-            <ellipse cx="60" cy="72" rx="34" ry="34" fill="{_BODY}"/>
-            <ellipse cx="60" cy="78" rx="22" ry="24" fill="{_BELLY}"/>
-            <!-- wings -->
-            <g class="ollie-wing-l"><ellipse cx="28" cy="72" rx="9" ry="20" fill="{_BODY_DARK}"/></g>
-            <g class="ollie-wing-r"><ellipse cx="92" cy="72" rx="9" ry="20" fill="{_BODY_DARK}"/></g>
-            <!-- head group (tilts gently) -->
-            <g class="ollie-head">
-                <ellipse cx="60" cy="50" rx="36" ry="32" fill="{_BODY}"/>
-                <!-- ear tufts -->
-                <path d="M34,26 L40,42 L28,40 Z" fill="{_BODY}"/>
-                <path d="M86,26 L80,42 L92,40 Z" fill="{_BODY}"/>
-                <!-- eye rings -->
-                <circle cx="44" cy="52" r="16" fill="{_EYE_RING}"/>
-                <circle cx="76" cy="52" r="16" fill="{_EYE_RING}"/>
-                <!-- pupils -->
-                <circle cx="44" cy="{52 + cfg['pupil_dy']}" r="7" fill="#2A2140"/>
-                <circle cx="76" cy="{52 + cfg['pupil_dy']}" r="7" fill="#2A2140"/>
-                <circle cx="46" cy="{50 + cfg['pupil_dy']}" r="2.4" fill="#FFFFFF"/>
-                <circle cx="78" cy="{50 + cfg['pupil_dy']}" r="2.4" fill="#FFFFFF"/>
-                <!-- blinking eyelids -->
-                <g class="ollie-eyelid">
-                    <rect x="28" y="36" width="32" height="16" rx="8" fill="{_BODY}"/>
-                    <rect x="60" y="36" width="32" height="16" rx="8" fill="{_BODY}"/>
-                </g>
-                <!-- brows -->
-                <path d="{cfg['brow_left']}" fill="none" stroke="{_BODY_DARK}" stroke-width="2.5" stroke-linecap="round"/>
-                <path d="{cfg['brow_right']}" fill="none" stroke="{_BODY_DARK}" stroke-width="2.5" stroke-linecap="round"/>
-                <!-- beak -->
-                <path d="M60,58 L54,64 L66,64 Z" fill="{_BEAK}"/>
-                {_mouth_path(cfg['mouth'])}
-            </g>
-        </svg>
-    </div>"""
-
-
 def compute_mood(summary: dict, goals_df, over_budget: bool, first_load: bool) -> str:
     """
-    Decide Ollie's mood from real financial state.
+    Decide Vinny's mood from real financial state.
     Priority: greeting -> any goal reached -> over budget -> positive net worth -> neutral.
     """
-    import pandas as pd
-
     if first_load:
         return "wave"
 
-    # any goal reached?
     if goals_df is not None and not goals_df.empty:
         try:
             import data_store as ds
@@ -243,3 +314,7 @@ def compute_mood(summary: dict, goals_df, over_budget: bool, first_load: bool) -
         return "happy"
 
     return "neutral"
+
+
+# Backwards-compatible alias so older calls keep working.
+owl_svg = character_svg

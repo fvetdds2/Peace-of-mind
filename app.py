@@ -107,10 +107,10 @@ PLOTLY_BLUES = ["#2F6FED", "#7FA6F0", "#B7CCF5", "#16181D", "#5B8CE8", "#0F1218"
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
-if "ollie_greeted" not in st.session_state:
-    st.session_state.ollie_greeted = False
+if "vinny_greeted" not in st.session_state:
+    st.session_state.vinny_greeted = False
 
-# ---- Ollie the Owl: compute mood from live financial state ----
+# ---- Vinny: compute mood from live financial state ----
 def _current_month_over_budget() -> bool:
     month = datetime.date.today().strftime("%Y-%m")
     bva = ds.budget_vs_actual(month)
@@ -122,9 +122,9 @@ try:
     _summary = ds.net_worth_summary()
     _goals = ds.load_table("goals")
     _over_budget = _current_month_over_budget()
-    _first_load = not st.session_state.ollie_greeted
+    _first_load = not st.session_state.vinny_greeted
     _mood = buddy.compute_mood(_summary, _goals, _over_budget, _first_load)
-    st.session_state.ollie_greeted = True
+    st.session_state.vinny_greeted = True
 except Exception:
     _mood = "neutral"
 
@@ -132,7 +132,7 @@ with st.sidebar:
     buddy.render(_mood, height=200)
     st.markdown(
         '<div style="text-align:center; font-size:12px; color:#8A8F98; font-weight:600; '
-        'letter-spacing:0.04em; margin-top:-8px;">OLLIE · your money buddy</div>',
+        'letter-spacing:0.04em; margin-top:-8px;">VINNY · your money buddy</div>',
         unsafe_allow_html=True,
     )
 
