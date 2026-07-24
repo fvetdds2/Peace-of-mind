@@ -138,7 +138,7 @@ try:
     st.session_state["_last_income_total"] = _income_now
 
     _vinny_mood = buddy.compute_vinny_mood(_summary, _goals, _month, _income_just_added, _first_load)
-    _mj_mood = buddy.compute_mj_mood(_month, _over_budget, _first_load)
+    _mj_mood = buddy.compute_mj_mood(_month, _over_budget, _first_load, _income_just_added)
     st.session_state.vinny_greeted = True
 except Exception:
     _vinny_mood = _mj_mood = "neutral"
