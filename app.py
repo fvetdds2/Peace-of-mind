@@ -105,6 +105,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 PLOTLY_BLUES = ["#2F6FED", "#7FA6F0", "#B7CCF5", "#16181D", "#5B8CE8", "#0F1218"]
+PLOTLY_GREENS = ["#1E9E62", "#5CBF8E", "#9BD9B8", "#146B42", "#3AAF77", "#0C4529"]
 
 # --- sign-in gate: points storage at this user's private folder ---
 CURRENT_USER = auth.login_gate()
@@ -447,6 +448,60 @@ with tabs[3]:
             st.rerun()
 
     if not income.empty:
+        st.markdown('<div class="hero-label">Income by Source</div>', unsafe_allow_html=True)
+        by_src = income.groupby("source")["amount"].sum().sort_values(ascending=False).reset_index()
+        inc_donut = go.Figure(data=[go.Pie(
+            labels=by_src["source"], values=by_src["amount"],
+            hole=0.68, sort=False,
+            marker=dict(colors=PLOTLY_GREENS, line=dict(color="#FAFAFA", width=3)),
+            textinfo="none",
+        )])
+        inc_donut.add_annotation(
+            text=f"${by_src['amount'].sum():,.0f}<br><span style='font-size:11px;color:#8A8F98;'>TOTAL INCOME</span>",
+            showarrow=False, font=dict(family="Inter", size=18, color="#16181D"),
+        )
+        inc_donut.update_layout(
+            showlegend=True,
+            legend=dict(orientation="v", font=dict(family="Inter", size=12, color="#3C3F45")),
+            margin=dict(l=0, r=0, t=10, b=10),
+            paper_bgcolor="#FAFAFA", height=320,
+        )
+        st.plotly_chart(inc_donut, use_container_width=True)
+
+        # --- income vs expenses, month by month ---
+        inc_m = income.groupby("month")["amount"].sum().rename("Income")
+        exp_m = (expenses.groupby("month")["amount"].sum().rename("Expenses")
+                 if not expenses.empty else pd.Series(dtype=float, name="Expenses"))
+        flow = pd.concat([inc_m, exp_m], axis=1).fillna(0).sort_index().reset_index()
+        flow = flow.rename(columns={flow.columns[0]: "month"})
+        flow["Net"] = flow["Income"] - flow["Expenses"]
+
+        st.markdown('<div class="hero-label" style="margin-top:24px;">Income vs Expenses</div>',
+                    unsafe_allow_html=True)
+        bars = go.Figure()
+        bars.add_bar(x=flow["month"], y=flow["Income"], name="Income", marker_color="#1E9E62")
+        bars.add_bar(x=flow["month"], y=flow["Expenses"], name="Expenses", marker_color="#D64545")
+        bars.add_trace(go.Scatter(
+            x=flow["month"], y=flow["Net"], name="Net", mode="lines+markers",
+            line=dict(color="#2F6FED", width=2.5),
+        ))
+        bars.update_layout(
+            barmode="group",
+            plot_bgcolor="#FAFAFA", paper_bgcolor="#FAFAFA",
+            margin=dict(l=0, r=0, t=16, b=0), height=300,
+            xaxis=dict(showgrid=False, title=None),
+            yaxis=dict(showgrid=True, gridcolor="#F0F1F3", title=None),
+            font=dict(family="Inter", color="#8A8F98", size=12),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
+        )
+        st.plotly_chart(bars, use_container_width=True)
+
+        latest = flow.iloc[-1]
+        if latest["Net"] >= 0:
+            st.caption(f"In {latest['month']} you kept ${latest['Net']:,.0f} of ${latest['Income']:,.0f} earned.")
+        else:
+            st.caption(f"In {latest['month']} you spent ${abs(latest['Net']):,.0f} more than you earned.")
+
         st.subheader("Income log — edit or delete entries")
         st.caption("Edit any cell directly, or use the 🗑️ icon on a row to delete it, then click Save.")
         edited_inc = st.data_editor(

@@ -37,7 +37,7 @@ VINNY_LINES = {
     "happy":   ["Oi \U0001F4AA", "Oi \u2014 ahead of the game \U0001F4C8",
                 "Oi \u2014 steady wins \U0001F31F"],
     "worried": ["Oi... let's tighten up.", "Oi \u2014 we can fix this."],
-    "neutral": [""],
+    "neutral": ["Oi, I am Vinny \U0001F44B", "Oi \U0001F44B"],
 }
 
 MJ_LINES = {
@@ -45,7 +45,7 @@ MJ_LINES = {
     "happy":   ["Maybe... or maybe not \U0001F60E", "Maybe or maybe not \U0001F48E"],
     "worried": ["Maybe not \u2014 spending's up \U0001F440",
                 "Maybe or maybe not... watch it"],
-    "neutral": [""],
+    "neutral": ["Maybe... or maybe not \U0001F48E"],
 }
 
 
@@ -136,7 +136,7 @@ def _mouth_path(kind: str) -> str:
 
 def character_svg(mood: str = "neutral") -> str:
     cfg = dict(_mood_config(mood))
-    cfg["speech"] = _pick_line(VINNY_LINES, mood) if cfg["speech"] else cfg["speech"]
+    cfg["speech"] = _pick_line(VINNY_LINES, mood)
     if mood == "wave":
         arm_anim, forearm_anim, fa_dur = "vinny-arm-raise", "vinny-forearm-wave", "0.9s"
     else:
@@ -471,13 +471,12 @@ def _mj_face(mood: str) -> dict:
     bg_fg = {"happy": ("#E9F7EF", "#1E7A48"), "worried": ("#FCECEC", "#B23333"),
              "wave": ("#EAF1FE", "#1E4FB0"), "neutral": ("#F2F3F5", "#3C3F45")}
     f["bg"], f["fg"] = bg_fg.get(mood, bg_fg["neutral"])
-    f["speech"] = "x" if mood in ("happy", "worried", "wave") else ""
     return f
 
 
 def mj_svg(mood: str = "neutral") -> str:
     f = dict(_mj_face(mood))
-    f["speech"] = _pick_line(MJ_LINES, mood) if f["speech"] else f["speech"]
+    f["speech"] = _pick_line(MJ_LINES, mood)
     py = f["pupil_dy"]
 
     speech_html = ""
