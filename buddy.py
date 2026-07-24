@@ -15,6 +15,8 @@ The SVG uses only CSS animations (no JS) and is rendered through
 components.html so the animations reliably run inside Streamlit.
 """
 
+from functools import lru_cache as _lru_cache
+
 # Palette
 _SKIN = "#E8B183"
 _SKIN_SHADE = "#D2996A"
@@ -138,13 +140,14 @@ def _mouth_path(kind: str) -> str:
     )
 
 
+@_lru_cache(maxsize=16)
 def character_svg(mood: str = "neutral") -> str:
     cfg = dict(_mood_config(mood))
     cfg["speech"] = _pick_line(VINNY_LINES, mood)
     if mood == "wave":
         arm_anim, forearm_anim, fa_dur = "vinny-arm-raise", "vinny-forearm-wave", "0.9s"
     else:
-        arm_anim, forearm_anim, fa_dur = "vinny-arm-idle", "vinny-forearm-still", "2.5s"
+        arm_anim, forearm_anim, fa_dur = "vinny-arm-idle", "none", "0s"
     py = cfg["pupil_dy"]
 
     speech_html = ""
@@ -212,9 +215,6 @@ def character_svg(mood: str = "neutral") -> str:
     }}
     @keyframes vinny-arm-raise {{
         0%, 100% {{ transform: rotate(135deg); }}
-    }}
-    @keyframes vinny-forearm-still {{
-        0%, 100% {{ transform: rotate(0deg); }}
     }}
     @keyframes vinny-forearm-wave {{
         0%, 100% {{ transform: rotate(-15deg); }}
@@ -501,6 +501,7 @@ def _mj_face(mood: str) -> dict:
     return f
 
 
+@_lru_cache(maxsize=16)
 def mj_svg(mood: str = "neutral") -> str:
     f = dict(_mj_face(mood))
     f["speech"] = _pick_line(MJ_LINES, mood)
@@ -509,6 +510,8 @@ def mj_svg(mood: str = "neutral") -> str:
     ball_anim = "mj-dunk-ball" if dunking else "mj-dribble"
     ball_dur = "2.0s" if dunking else "0.75s"
     body_anim = "mj-dunk-leap" if dunking else "mj-idle"
+    hoop_anim_net = "mj-net-swish 2.0s ease-in-out infinite" if dunking else "none"
+    hoop_anim_rim = "mj-rim-shake 2.0s ease-in-out infinite" if dunking else "none"
     body_dur = "2.0s" if dunking else "3.2s"
     # arm fully extended overhead for the slam, low for the dribble
     arm_d = "M56,54 Q66,36 72,22" if dunking else "M56,54 Q66,70 70,90"
@@ -535,8 +538,8 @@ def mj_svg(mood: str = "neutral") -> str:
     .mj-body {{ animation: {body_anim} {body_dur} ease-in-out infinite; transform-origin: 44px 119px; }}
     .mj-eyelid {{ animation: mj-blink 5.4s infinite; transform-origin: center; }}
     .mj-ball {{ animation: {ball_anim} {ball_dur} ease-in-out infinite; transform-origin: 62px 106px; }}
-    .mj-net {{ animation: mj-net-swish 2.0s ease-in-out infinite; transform-origin: 100px 34px; }}
-    .mj-rim {{ animation: mj-rim-shake 2.0s ease-in-out infinite; transform-origin: 100px 33px; }}
+    .mj-net {{ animation: {hoop_anim_net}; transform-origin: 100px 34px; }}
+    .mj-rim {{ animation: {hoop_anim_rim}; transform-origin: 100px 33px; }}
     .mj-shine {{ animation: mj-twinkle 2.6s ease-in-out infinite 0.4s; }}
 
     @keyframes mj-idle {{

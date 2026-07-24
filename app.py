@@ -144,10 +144,9 @@ except Exception:
     _vinny_mood = _mj_mood = "neutral"
 
 with st.sidebar:
-    buddy.render(_vinny_mood, height=200)
     st.markdown(
         '<div style="text-align:center; font-size:12px; color:#8A8F98; font-weight:600; '
-        'letter-spacing:0.04em; margin-top:-8px;">VINNY · your money buddy</div>',
+        'letter-spacing:0.04em;">VINNY &amp; MJ · your money buddies</div>',
         unsafe_allow_html=True,
     )
     if st.session_state.get("auth_user"):
