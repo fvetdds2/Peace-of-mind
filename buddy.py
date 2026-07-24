@@ -23,6 +23,8 @@ _HAIR_HI = "#35241A"     # subtle highlight
 _JERSEY = "#FFFFFF"
 _JERSEY_TRIM = "#1F3A5F"
 _JERSEY_EDGE = "#D5DBE4"
+_CREST_GOLD = "#E8B93F"
+_CREST_NAVY = "#123C7A"
 _SHORTS = "#2A3550"
 _SHIRT = "#2F6FED"
 _SHIRT_DARK = "#255BC7"
@@ -42,7 +44,7 @@ VINNY_LINES = {
 }
 
 MJ_LINES = {
-    "shoot":   ["Maybe... swish \U0001F3C0", "Maybe or maybe not \u2014 count it \U0001F3C0"],
+    "dunk":    ["Maybe... SLAM \U0001F3C0", "Maybe or maybe not \u2014 count it \U0001F3C0"],
     "wave":    ["Maybe... or maybe not \U0001F48E"],
     "happy":   ["Maybe... or maybe not \U0001F60E", "Maybe or maybe not \U0001F48E"],
     "worried": ["Maybe not \u2014 spending's up \U0001F440",
@@ -260,8 +262,14 @@ def character_svg(mood: str = "neutral") -> str:
 
             <path d="M42,76 q18,-6 36,0 l3,21 q-21,5 -42,0 z" fill="{_JERSEY}" stroke="{_JERSEY_EDGE}" stroke-width="1"/>
             <path d="M54,74 q6,7 12,0 l-2,-3 q-4,4 -8,0 z" fill="{_JERSEY_TRIM}"/>
-            <text x="60" y="93" text-anchor="middle" font-family="Inter, sans-serif"
-                  font-size="13" font-weight="700" fill="{_JERSEY_TRIM}">4</text>
+            <text x="62" y="94" text-anchor="middle" font-family="Inter, sans-serif"
+                  font-size="12" font-weight="700" fill="{_JERSEY_TRIM}">4</text>
+            <circle cx="49" cy="82" r="5.4" fill="{_CREST_GOLD}"/>
+            <circle cx="49" cy="82" r="4.1" fill="{_CREST_NAVY}"/>
+            <path d="M46.7,80 L49,84.6 L51.3,80" fill="none" stroke="{_CREST_GOLD}"
+                  stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M45.4,77.6 q3.6,-1.6 7.2,0" fill="none" stroke="{_CREST_GOLD}"
+                  stroke-width="1.1" stroke-linecap="round"/>
 
             <g class="vinny-arm-l">
                 <g class="vinny-forearm-l">
@@ -381,7 +389,7 @@ def compute_mj_mood(month: dict, over_budget: bool, first_load: bool,
     if first_load:
         return "wave"
     if income_just_added:
-        return "shoot"
+        return "dunk"
     if month:
         inc, exp = month.get("income", 0), month.get("expenses", 0)
         if exp > inc and exp > 0:
@@ -460,7 +468,7 @@ def _mj_face(mood: str) -> dict:
             "mouth": '<path d="M42,36 Q48,43 54,36 Z" fill="#8E3B2C"/>'
                      '<path d="M43.2,36 Q48,39 52.8,36 Z" fill="#FFFFFF"/>',
         },
-        "shoot": {
+        "dunk": {
             "brow_l": "M41,19 Q46,16.5 51,18.5", "brow_r": "M57,18.5 Q62,16.5 67,19",
             "pupil_dy": 0,
             "mouth": '<path d="M42,36 Q48,44 54,36 Z" fill="#8E3B2C"/>'
@@ -486,7 +494,7 @@ def _mj_face(mood: str) -> dict:
         },
     }
     f = dict(faces.get(mood, faces["neutral"]))
-    bg_fg = {"happy": ("#E9F7EF", "#1E7A48"), "shoot": ("#E9F7EF", "#1E7A48"),
+    bg_fg = {"happy": ("#E9F7EF", "#1E7A48"), "dunk": ("#E9F7EF", "#1E7A48"),
              "worried": ("#FCECEC", "#B23333"), "wave": ("#EAF1FE", "#1E4FB0"),
              "neutral": ("#F2F3F5", "#3C3F45")}
     f["bg"], f["fg"] = bg_fg.get(mood, bg_fg["neutral"])
@@ -497,11 +505,13 @@ def mj_svg(mood: str = "neutral") -> str:
     f = dict(_mj_face(mood))
     f["speech"] = _pick_line(MJ_LINES, mood)
     py = f["pupil_dy"]
-    shooting = mood == "shoot"
-    ball_anim = "mj-shoot" if shooting else "mj-dribble"
-    ball_dur = "1.9s" if shooting else "0.75s"
-    # shooting arm goes up; otherwise it stays low for the dribble
-    arm_d = "M56,54 Q66,44 70,32" if shooting else "M56,54 Q66,70 70,90"
+    dunking = mood == "dunk"
+    ball_anim = "mj-dunk-ball" if dunking else "mj-dribble"
+    ball_dur = "2.0s" if dunking else "0.75s"
+    body_anim = "mj-dunk-leap" if dunking else "mj-idle"
+    body_dur = "2.0s" if dunking else "3.2s"
+    # arm fully extended overhead for the slam, low for the dribble
+    arm_d = "M56,54 Q66,36 72,22" if dunking else "M56,54 Q66,70 70,90"
 
     speech_html = ""
     if f["speech"]:
@@ -522,10 +532,11 @@ def mj_svg(mood: str = "neutral") -> str:
         border-radius: 12px; white-space: nowrap;
         animation: mj-pop 0.4s ease-out;
     }}
-    .mj-body {{ animation: mj-idle 3.2s ease-in-out infinite; transform-origin: 48px 118px; }}
+    .mj-body {{ animation: {body_anim} {body_dur} ease-in-out infinite; transform-origin: 44px 119px; }}
     .mj-eyelid {{ animation: mj-blink 5.4s infinite; transform-origin: center; }}
-    .mj-ball {{ animation: {ball_anim} {ball_dur} ease-in-out infinite; transform-origin: 72px 104px; }}
-    .mj-net {{ animation: mj-net-swish 1.9s ease-in-out infinite; transform-origin: 100px 34px; }}
+    .mj-ball {{ animation: {ball_anim} {ball_dur} ease-in-out infinite; transform-origin: 62px 106px; }}
+    .mj-net {{ animation: mj-net-swish 2.0s ease-in-out infinite; transform-origin: 100px 34px; }}
+    .mj-rim {{ animation: mj-rim-shake 2.0s ease-in-out infinite; transform-origin: 100px 33px; }}
     .mj-shine {{ animation: mj-twinkle 2.6s ease-in-out infinite 0.4s; }}
 
     @keyframes mj-idle {{
@@ -540,19 +551,35 @@ def mj_svg(mood: str = "neutral") -> str:
         0%, 100% {{ transform: translateY(0) rotate(0deg); }}
         50%      {{ transform: translateY(-15px) rotate(150deg); }}
     }}
-    @keyframes mj-shoot {{
+    @keyframes mj-dunk-leap {{
+        0%   {{ transform: translate(0px, 0px); }}
+        18%  {{ transform: translate(2px, 6px); }}
+        45%  {{ transform: translate(37px, -20px); }}
+        58%  {{ transform: translate(38px, -8px); }}
+        75%  {{ transform: translate(22px, -2px); }}
+        88%  {{ transform: translate(4px, 3px); }}
+        100% {{ transform: translate(0px, 0px); }}
+    }}
+    @keyframes mj-dunk-ball {{
         0%   {{ transform: translate(0px, 0px) rotate(0deg); }}
-        30%  {{ transform: translate(14px, -52px) rotate(200deg); }}
-        50%  {{ transform: translate(28px, -70px) rotate(330deg); }}
-        62%  {{ transform: translate(28px, -56px) rotate(400deg); }}
-        78%  {{ transform: translate(27px, -26px) rotate(500deg); }}
-        92%  {{ transform: translate(10px, -4px) rotate(560deg); }}
-        100% {{ transform: translate(0px, 0px) rotate(600deg); }}
+        18%  {{ transform: translate(3px, 7px) rotate(40deg); }}
+        45%  {{ transform: translate(38px, -75px) rotate(230deg); }}
+        56%  {{ transform: translate(38px, -70px) rotate(290deg); }}
+        66%  {{ transform: translate(37px, -50px) rotate(330deg); }}
+        78%  {{ transform: translate(35px, -24px) rotate(390deg); }}
+        90%  {{ transform: translate(15px, -4px) rotate(440deg); }}
+        100% {{ transform: translate(0px, 0px) rotate(480deg); }}
+    }}
+    @keyframes mj-rim-shake {{
+        0%, 44%, 100% {{ transform: translateY(0) scaleY(1); }}
+        50%           {{ transform: translateY(2px) scaleY(0.85); }}
+        58%           {{ transform: translateY(-1px) scaleY(1.08); }}
+        66%           {{ transform: translateY(1px) scaleY(0.95); }}
     }}
     @keyframes mj-net-swish {{
-        0%, 55%, 100% {{ transform: scaleY(1); }}
-        66%           {{ transform: scaleY(1.35); }}
-        80%           {{ transform: scaleY(1.1); }}
+        0%, 48%, 100% {{ transform: scaleY(1); }}
+        58%           {{ transform: scaleY(1.45); }}
+        72%           {{ transform: scaleY(1.15); }}
     }}
     @keyframes mj-twinkle {{
         0%, 100% {{ opacity: 0.45; }}
@@ -580,7 +607,7 @@ def mj_svg(mood: str = "neutral") -> str:
             <rect x="97" y="12" width="13" height="10" rx="1"
                   fill="none" stroke="{_HOOP_DARK}" stroke-width="1.3"/>
             <line x1="103" y1="25" x2="103" y2="30" stroke="{_HOOP_DARK}" stroke-width="1.6"/>
-            <ellipse cx="100" cy="33" rx="12" ry="3" fill="none"
+            <ellipse class="mj-rim" cx="100" cy="33" rx="12" ry="3" fill="none"
                      stroke="{_HOOP}" stroke-width="2.4"/>
             <g class="mj-net">
                 <path d="M89,34 L92,45 M94,35 L95.5,46 M100,35.5 L100,46.5
@@ -591,6 +618,7 @@ def mj_svg(mood: str = "neutral") -> str:
             </g>
 
             <g class="mj-body">
+              <g transform="translate(6.6,27) scale(0.78)">
                 <!-- legs + sneakers -->
                 <rect x="41" y="94" width="7.5" height="20" rx="3.5" fill="{_SKIN}"/>
                 <rect x="50" y="94" width="7.5" height="20" rx="3.5" fill="{_SKIN}"/>
@@ -663,14 +691,15 @@ def mj_svg(mood: str = "neutral") -> str:
                       stroke-width="2" stroke-linecap="round"/>
                 <ellipse cx="48" cy="30" rx="1.5" ry="1.2" fill="{_SKIN_SHADE}"/>
                 {f['mouth']}
+              </g>
             </g>
 
             <!-- basketball -->
             <g class="mj-ball">
-                <circle cx="72" cy="104" r="7.2" fill="{_BALL}" stroke="{_BALL_LINE}" stroke-width="1"/>
-                <path d="M64.8,104 h14.4 M72,96.8 v14.4" stroke="{_BALL_LINE}" stroke-width="1"/>
-                <path d="M66.4,99.4 Q72,104 66.4,108.6 M77.6,99.4 Q72,104 77.6,108.6"
-                      stroke="{_BALL_LINE}" stroke-width="1" fill="none"/>
+                <circle cx="62" cy="106" r="5.6" fill="{_BALL}" stroke="{_BALL_LINE}" stroke-width="0.9"/>
+                <path d="M56.4,106 h11.2 M62,100.4 v11.2" stroke="{_BALL_LINE}" stroke-width="0.9"/>
+                <path d="M57.6,102.1 Q62,106 57.6,109.9 M66.4,102.1 Q62,106 66.4,109.9"
+                      stroke="{_BALL_LINE}" stroke-width="0.9" fill="none"/>
             </g>
         </svg>
     </div>"""
