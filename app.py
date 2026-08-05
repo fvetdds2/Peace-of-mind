@@ -115,7 +115,7 @@ if "chat_history" not in st.session_state:
 if "vinny_greeted" not in st.session_state:
     st.session_state.vinny_greeted = False
 
-# ---- Vinny: compute mood from live financial state ----
+# ---- Vinny: compute mood from live financial state change ----
 def _current_month_over_budget() -> bool:
     month = datetime.date.today().strftime("%Y-%m")
     bva = ds.budget_vs_actual(month)
