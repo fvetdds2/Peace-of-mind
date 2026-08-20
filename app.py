@@ -15,6 +15,7 @@ import llm_assistant
 import buddy
 import auth
 import emailer
+import geocode
 
 st.set_page_config(page_title="Peace of Mind", page_icon="🕊️", layout="wide", initial_sidebar_state="expanded")
 
@@ -772,8 +773,35 @@ with tabs[4]:
 # ---------------- Properties ----------------
 with tabs[5]:
     with st.expander("➕ Add a property"):
+        st.caption("Search for the address to auto-fill a verified, correctly formatted version — or just type it directly below.")
+        find_cols = st.columns([3, 1])
+        addr_query = find_cols[0].text_input(
+            "Search address", key="prop_addr_query",
+            placeholder="e.g. 2227 Mayfair Ave, Nashville, TN", label_visibility="collapsed",
+        )
+        if find_cols[1].button("🔍 Find address", key="find_addr_btn", use_container_width=True):
+            with st.spinner("Looking up address..."):
+                st.session_state["prop_addr_candidates"] = geocode.find_address_candidates(addr_query)
+            if not st.session_state["prop_addr_candidates"]:
+                st.warning("No verified match found — you can still type the full address manually below.")
+
+        candidates = st.session_state.get("prop_addr_candidates") or []
+        if candidates:
+            picked = st.radio(
+                "Select the correct address",
+                options=[c["formatted"] for c in candidates],
+                key="prop_addr_pick",
+            )
+            if st.button("✅ Use this address", key="use_addr_btn"):
+                st.session_state["prop_addr_confirmed"] = picked
+                st.session_state["prop_addr_candidates"] = []
+                st.rerun()
+
         with st.form("add_property", clear_on_submit=True):
-            p_addr = st.text_input("Full address (Street, City, State, Zip)")
+            p_addr = st.text_input(
+                "Full address (Street, City, State, Zip)",
+                value=st.session_state.get("prop_addr_confirmed", ""),
+            )
             p_nick = st.text_input("Nickname", placeholder="e.g. Mayfair Ave")
             p_mortgage = st.number_input("Current mortgage balance", step=1000.0)
             if st.form_submit_button("Add property") and p_addr.strip():
@@ -793,6 +821,7 @@ with tabs[5]:
                     if rent_result.get("rent"):
                         new_row["suggested_rent"] = rent_result["rent"]
                 ds.append_row("properties", new_row)
+                st.session_state["prop_addr_confirmed"] = ""
                 st.rerun()
 
     properties = ds.load_table("properties")
