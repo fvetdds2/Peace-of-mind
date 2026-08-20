@@ -269,7 +269,7 @@ with head_left:
         unsafe_allow_html=True,
     )
 with head_right:
-    buddy.render_duo(_vinny_mood, _mj_mood, height=200)
+    buddy.render_duo(_vinny_mood, _mj_mood, height=235)
 
 tabs = st.tabs(["📊 Net Worth", "🎯 Goals", "🏦 Accounts", "🧾 Expenses & Income", "📋 Budget", "🏠 Properties", "💬 Ask the Assistant"])
 
@@ -787,6 +787,26 @@ with tabs[5]:
                 st.rerun()
 
     properties = ds.load_table("properties")
+
+    # --- Auto-refresh valuations once per session, right when the app opens ---
+    if valuation.has_api_key() and not properties.empty and not st.session_state.get("_properties_auto_refreshed"):
+        st.session_state["_properties_auto_refreshed"] = True
+        with st.spinner("Refreshing property valuations..."):
+            refreshed = False
+            for idx, p in properties.iterrows():
+                val_result = valuation.get_value_estimate(p["address"])
+                rent_result = valuation.get_rent_estimate(p["address"])
+                updates = {"last_updated": datetime.date.today().isoformat()}
+                if "value" in val_result and val_result.get("value"):
+                    updates["rentcast_estimate"] = val_result["value"]
+                if "rent" in rent_result and rent_result.get("rent"):
+                    updates["suggested_rent"] = rent_result["rent"]
+                if len(updates) > 1:
+                    ds.update_row("properties", idx, updates)
+                    refreshed = True
+        if refreshed:
+            st.rerun()
+
     if properties.empty:
         st.caption("No properties yet. Add one above.")
 
@@ -799,7 +819,7 @@ with tabs[5]:
             top[1].metric("Est. value", f"${avg_val:,.0f}")
 
             if valuation.has_api_key():
-                if top[2].button("🔄 Refresh valuation (RentCast)", key=f"refresh_{idx}"):
+                if top[2].button("🔄 Refresh again", key=f"refresh_{idx}", help="Valuations already auto-refresh once each time you open the app — use this to pull again in the same session."):
                     with st.spinner("Fetching current value + rent estimate..."):
                         val_result = valuation.get_value_estimate(p["address"])
                         rent_result = valuation.get_rent_estimate(p["address"])
