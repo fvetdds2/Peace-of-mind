@@ -526,7 +526,7 @@ def mj_svg(mood: str = "neutral") -> str:
     return f"""
     <style>
     .mj-wrap {{
-        position: relative; width: 130px;
+        position: relative; width: 172px;
         display: flex; flex-direction: column; align-items: center; gap: 6px;
         font-family: 'Inter', -apple-system, sans-serif;
     }}
@@ -595,7 +595,7 @@ def mj_svg(mood: str = "neutral") -> str:
     </style>
     <div class="mj-wrap">
         {speech_html}
-        <svg width="130" height="130" viewBox="0 0 120 126"
+        <svg width="172" height="172" viewBox="0 0 120 126"
              xmlns="http://www.w3.org/2000/svg" role="img"
              aria-label="MJ playing basketball">
 
@@ -709,7 +709,7 @@ def mj_svg(mood: str = "neutral") -> str:
 
 
 def render_duo(vinny_mood: str = "neutral", mj_mood: str = "neutral",
-               height: int = 200) -> None:
+               height: int = 235) -> None:
     """Render Vinny and MJ side by side, each with its own mood."""
     import streamlit.components.v1 as components
     html = f"""
