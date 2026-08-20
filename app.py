@@ -14,6 +14,7 @@ import valuation
 import llm_assistant
 import buddy
 import auth
+import emailer
 
 st.set_page_config(page_title="Peace of Mind", page_icon="🕊️", layout="wide", initial_sidebar_state="expanded")
 
@@ -143,6 +144,88 @@ try:
 except Exception:
     _vinny_mood = _mj_mood = "neutral"
 
+def _build_email_report():
+    """Assemble subject/html/text for the net worth + current-month budget email."""
+    summary = ds.net_worth_summary()
+    month_key = datetime.date.today().strftime("%Y-%m")
+    planned_income = ds.get_planned_income(month_key)
+    line_items = ds.budget_line_items(month_key)
+    bva = ds.budget_vs_actual(month_key)
+    actual_map = dict(zip(bva["category"], bva["actual"])) if not bva.empty else {}
+    total_budgeted = line_items["budget_amount"].sum() if not line_items.empty else 0.0
+    left_to_budget = planned_income - total_budgeted
+
+    today_str = datetime.date.today().strftime("%B %d, %Y")
+    subject = f"Peace of Mind — Net Worth & Budget — {today_str}"
+
+    rows_html, rows_text = "", []
+    if not line_items.empty:
+        for _, row in line_items.iterrows():
+            cat = row["category"]
+            budgeted = float(row["budget_amount"])
+            spent = float(actual_map.get(cat, 0.0))
+            over = spent > budgeted
+            color = "#D64545" if over else "#1E9E62"
+            rows_html += f"""
+            <tr>
+                <td style="padding:6px 10px; border-bottom:1px solid #EEEFF1;">{cat}</td>
+                <td style="padding:6px 10px; border-bottom:1px solid #EEEFF1; text-align:right;">${spent:,.0f}</td>
+                <td style="padding:6px 10px; border-bottom:1px solid #EEEFF1; text-align:right;">${budgeted:,.0f}</td>
+                <td style="padding:6px 10px; border-bottom:1px solid #EEEFF1; text-align:right; color:{color};">${budgeted - spent:,.0f}</td>
+            </tr>"""
+            rows_text.append(
+                f"  {cat}: ${spent:,.0f} spent of ${budgeted:,.0f} "
+                f"(${abs(budgeted - spent):,.0f} {'over' if over else 'left'})"
+            )
+
+    left_line_html = (
+        f"Left to budget ${left_to_budget:,.0f}" if left_to_budget >= 0
+        else f"Over budget ${abs(left_to_budget):,.0f}"
+    )
+    left_line_text = (
+        f"Left: ${left_to_budget:,.0f}" if left_to_budget >= 0
+        else f"Over by ${abs(left_to_budget):,.0f}"
+    )
+
+    html = f"""
+    <div style="font-family:Arial,sans-serif; color:#16181D; max-width:600px;">
+        <h2 style="margin-bottom:4px;">🕊️ Peace of Mind</h2>
+        <p style="color:#8A8F98; margin-top:0;">{today_str}</p>
+
+        <h3 style="margin-bottom:4px;">Net Worth</h3>
+        <p style="font-size:28px; font-weight:700; margin:4px 0;">${summary['net_worth']:,.0f}</p>
+        <p style="color:#8A8F98; margin:0 0 20px 0;">
+            Assets: ${summary['total_assets']:,.0f} &nbsp;·&nbsp; Liabilities: ${summary['total_liabilities']:,.0f}
+        </p>
+
+        <h3 style="margin-bottom:4px;">Budget — {month_key}</h3>
+        <p style="color:#8A8F98; margin:0 0 12px 0;">
+            Income ${planned_income:,.0f} &nbsp;·&nbsp; Budgeted ${total_budgeted:,.0f} &nbsp;·&nbsp; {left_line_html}
+        </p>
+        <table style="border-collapse:collapse; width:100%; font-size:14px;">
+            <tr style="text-align:left; color:#8A8F98; font-size:11px; text-transform:uppercase;">
+                <th style="padding:6px 10px;">Category</th>
+                <th style="padding:6px 10px; text-align:right;">Spent</th>
+                <th style="padding:6px 10px; text-align:right;">Budgeted</th>
+                <th style="padding:6px 10px; text-align:right;">Left</th>
+            </tr>
+            {rows_html if rows_html else '<tr><td style="padding:6px 10px; color:#8A8F98;" colspan="4">No budget lines set for this month.</td></tr>'}
+        </table>
+    </div>
+    """
+
+    text = (
+        f"PEACE OF MIND — {today_str}\n\n"
+        f"NET WORTH: ${summary['net_worth']:,.0f}\n"
+        f"  Assets: ${summary['total_assets']:,.0f} | Liabilities: ${summary['total_liabilities']:,.0f}\n\n"
+        f"BUDGET — {month_key}\n"
+        f"  Income: ${planned_income:,.0f} | Budgeted: ${total_budgeted:,.0f} | {left_line_text}\n"
+        + ("\n".join(rows_text) if rows_text else "  No budget lines set for this month.")
+    )
+
+    return subject, html, text
+
+
 with st.sidebar:
     st.markdown(
         '<div style="text-align:center; font-size:12px; color:#8A8F98; font-weight:600; '
@@ -153,6 +236,27 @@ with st.sidebar:
         st.caption(f"Signed in as **{st.session_state['auth_user']}**")
     elif st.session_state.get("_unlocked_mode"):
         st.warning("No accounts configured — this app is unlocked and anyone with the link can see this data.", icon="⚠️")
+
+    st.divider()
+    st.markdown('<div class="hero-label">📧 Email report</div>', unsafe_allow_html=True)
+    if emailer.is_configured():
+        report_to = st.text_input(
+            "Send to", value=emailer.default_recipient(),
+            key="email_report_to", label_visibility="collapsed",
+        )
+        if st.button("Send net worth + budget", key="send_report_btn", use_container_width=True):
+            with st.spinner("Sending..."):
+                subject, html_body, text_body = _build_email_report()
+                ok, msg = emailer.send_report(report_to, subject, html_body, text_body)
+            if ok:
+                st.success(msg)
+            else:
+                st.error(msg)
+    else:
+        st.caption(
+            "Not set up yet. Add a Gmail App Password to `.streamlit/secrets.toml` "
+            "under `[email]` — see the comment at the top of `emailer.py` for the steps."
+        )
 
 # Header row: title on the left, Ollie tucked into the top-right corner (always visible)
 head_left, head_right = st.columns([3, 2])
