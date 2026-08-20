@@ -777,13 +777,22 @@ with tabs[5]:
             p_nick = st.text_input("Nickname", placeholder="e.g. Mayfair Ave")
             p_mortgage = st.number_input("Current mortgage balance", step=1000.0)
             if st.form_submit_button("Add property") and p_addr.strip():
-                ds.append_row("properties", {
+                new_row = {
                     "address": p_addr.strip(), "nickname": p_nick.strip(),
                     "zillow_estimate": None, "redfin_estimate": None, "homes_estimate": None,
                     "rentcast_estimate": None, "suggested_rent": None,
                     "mortgage_balance": p_mortgage,
                     "last_updated": datetime.date.today().isoformat(), "notes": "",
-                })
+                }
+                if valuation.has_api_key():
+                    with st.spinner("Looking up today's value estimate..."):
+                        val_result = valuation.get_value_estimate(p_addr.strip())
+                        rent_result = valuation.get_rent_estimate(p_addr.strip())
+                    if val_result.get("value"):
+                        new_row["rentcast_estimate"] = val_result["value"]
+                    if rent_result.get("rent"):
+                        new_row["suggested_rent"] = rent_result["rent"]
+                ds.append_row("properties", new_row)
                 st.rerun()
 
     properties = ds.load_table("properties")
