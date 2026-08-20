@@ -568,8 +568,44 @@ with tabs[4]:
     </div>
     """, unsafe_allow_html=True)
 
+    # --- Copy budget lines from a previous month (so you're not re-typing categories every month) ---
+    all_budgets = ds.load_table("budgets")
+    past_months = (
+        sorted([m for m in all_budgets["month"].unique() if m != month_pick], reverse=True)
+        if not all_budgets.empty else []
+    )
+    if past_months:
+        with st.container(border=True):
+            st.markdown('<div class="hero-label">Copy from a previous month</div>', unsafe_allow_html=True)
+            cp_cols = st.columns([2, 1, 1])
+            source_month = cp_cols[0].selectbox(
+                "Source month", past_months, key=f"copy_src_{month_pick}", label_visibility="collapsed",
+            )
+            copy_amounts = cp_cols[1].checkbox(
+                "Keep amounts", value=True, key=f"copy_amt_{month_pick}",
+                help="On: copies planned amounts too. Off: copies category names only, starting at $0.",
+            )
+            if cp_cols[2].button(f"📋 Copy to {month_pick}", key=f"copy_btn_{month_pick}"):
+                source_lines = ds.budget_line_items(source_month)
+                existing_cats = set(line_items["category"]) if not line_items.empty else set()
+                added = 0
+                for _, r in source_lines.iterrows():
+                    if r["category"] in existing_cats:
+                        continue
+                    ds.append_row("budgets", {
+                        "month": month_pick,
+                        "category": r["category"],
+                        "budget_amount": float(r["budget_amount"]) if copy_amounts else 0.0,
+                    })
+                    added += 1
+                if added:
+                    st.success(f"Copied {added} categor{'y' if added == 1 else 'ies'} from {source_month}.")
+                else:
+                    st.info(f"{month_pick} already has all of {source_month}'s categories — nothing to copy.")
+                st.rerun()
+
     # --- Add a budget line ---
-    with st.expander("➕ Add a budget line"):
+    with st.expander("➕ Add a budget line" if not line_items.empty else "➕ Add a budget line manually"):
         with st.form("add_budget_line", clear_on_submit=True):
             cols = st.columns([2, 1])
             bl_cat = cols[0].text_input("Category", placeholder="e.g. Groceries, Rent, Gas")
